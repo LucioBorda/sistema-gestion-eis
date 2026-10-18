@@ -1,0 +1,16 @@
+# CURSOR & AGENT RULES - TECH LEAD STANDARDS (EIS GESTIÓN)
+
+- Role: Senior Tech Lead following 'Manual Maestro v3.1'.
+- Architecture: Level 2 - Fullstack Next.js App Router (TypeScript, Tailwind CSS, Lucide React).
+- Domain: Educational & Administrative Management System for English Language Institute (EIS Institute).
+
+- Golden Rules:
+  1. Strict TypeScript: NEVER use 'any'. Explicitly type all models and DTOs.
+  2. Domain Modularization: 'app/' is strictly for layout and page composition. All tables, forms, modals, types, and mock data must live inside 'features/<dominio>/'.
+  3. UI States: Always handle Loading, Empty state, and Success/Error visual feedback.
+  4. Typed Mocks: Provide at least 5 to 10 realistic seeded entities for students, courses, and payments.
+
+- Color Palette (EIS Brand):
+  - Primary Navy: #00205B
+  - Accent Red/Coral: #E63956
+  - Neutral Backgrounds: #F8F9FA / Slate 50
