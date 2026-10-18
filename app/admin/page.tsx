@@ -43,15 +43,15 @@ export default function AdminDashboardPage(): React.ReactElement {
   const comisionesActivas = comisiones.filter((c) => c.activo).length;
 
   const pagosRealizados = cobranzas.filter((c) => c.estado === "Pagado");
-  const totalRecaudadoMes = pagosRealizados.reduce((acc, curr) => acc + curr.monto, 0);
+  const totalRecaudadoMes = pagosRealizados.reduce((acc, curr) => acc + curr.totalAPagar, 0);
 
   const totalEfectivo = pagosRealizados
     .filter((c) => c.metodoPago === "Efectivo")
-    .reduce((acc, curr) => acc + curr.monto, 0);
+    .reduce((acc, curr) => acc + curr.totalAPagar, 0);
 
   const totalTransferencia = pagosRealizados
     .filter((c) => c.metodoPago === "Transferencia")
-    .reduce((acc, curr) => acc + curr.monto, 0);
+    .reduce((acc, curr) => acc + curr.totalAPagar, 0);
 
   const pagosVencidos = cobranzas.filter((c) => c.estado === "Vencido");
   const porcentajeMorosidad = cobranzas.length > 0

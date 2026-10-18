@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useGlobalData } from "@/features/core/DataContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import { CobranzaItem, MetodoCobro, EstadoPago } from "@/features/cobranzas/types";
+import { CobroRapidoDesk } from "@/features/cobranzas/components/CobroRapidoDesk";
+import { ReciboNoFiscalModal } from "@/features/cobranzas/components/ReciboNoFiscalModal";
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -21,6 +23,7 @@ import {
   Wallet,
   AlertCircle,
   CheckCircle2,
+  ArrowUpRight,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { exportToExcelCSV, openInstitutionalPrintPreview } from "@/lib/exportUtils";
@@ -31,41 +34,47 @@ export default function CobranzasPage(): React.ReactElement {
   const { currentUser } = useAuth();
 
   const [modalNewOpen, setModalNewOpen] = useState(false);
-  const [modalPayOpen, setModalPayOpen] = useState(false);
+  const [reciboModalOpen, setReciboModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const [selectedCob, setSelectedCob] = useState<CobranzaItem | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
 
-  // Form State: Nuevo Arancel
+  // Form State: Nueva Cuota Manual
   const [estudianteId, setEstudianteId] = useState(estudiantes[0]?.id || "");
   const [concepto, setConcepto] = useState("Cuota Arancelaria Noviembre 2026");
   const [mesPeriodo, setMesPeriodo] = useState("Noviembre 2026");
-  const [monto, setMonto] = useState(28500);
+  const [monto, setMonto] = useState(54000);
   const [recargoMora, setRecargoMora] = useState(0);
   const [fechaVencimiento, setFechaVencimiento] = useState("2026-11-10");
 
-  // Form State: Cobro Rápido
-  const [metodoPagoCobro, setMetodoPagoCobro] = useState<MetodoCobro>("Efectivo");
-  const [comprobanteRef, setComprobanteRef] = useState("");
+  // KPI Calculations
+  const totalEfectivo = cobranzas
+    .filter((c) => c.estado === "Pagado" && c.metodoPago === "Efectivo")
+    .reduce((acc, c) => acc + c.totalAPagar, 0);
+
+  const totalTransferencia = cobranzas
+    .filter((c) => c.estado === "Pagado" && c.metodoPago === "Transferencia")
+    .reduce((acc, c) => acc + c.totalAPagar, 0);
+
+  const vencidasCount = cobranzas.filter((c) => c.estado === "Vencido").length;
+  const pagadasCount = cobranzas.filter((c) => c.estado === "Pagado").length;
 
   const handleOpenNew = () => {
     setSelectedCob(null);
     setEstudianteId(estudiantes[0]?.id || "");
     setConcepto("Cuota Arancelaria Noviembre 2026");
     setMesPeriodo("Noviembre 2026");
-    setMonto(28500);
+    setMonto(54000);
     setRecargoMora(0);
     setFechaVencimiento("2026-11-10");
     setModalNewOpen(true);
   };
 
-  const handleOpenPayModal = (item: CobranzaItem) => {
+  const handleOpenReceipt = (item: CobranzaItem) => {
     setSelectedCob(item);
-    setMetodoPagoCobro("Efectivo");
-    setComprobanteRef(`REC-${Date.now().toString().slice(-5)}`);
-    setModalPayOpen(true);
+    setReciboModalOpen(true);
   };
 
   const handleOpenDetail = (item: CobranzaItem) => {
@@ -83,6 +92,8 @@ export default function CobranzasPage(): React.ReactElement {
     const estObj = estudiantes.find((e) => e.id === estudianteId);
     const estudianteNombre = estObj ? estObj.nombreCompleto : "Alumno";
     const estudianteDni = estObj ? estObj.dni : "00000000";
+    const legajoNumero = estObj ? estObj.legajoNumero : "LEG-000";
+    const cursoNombre = estObj ? estObj.cursoActual : "General";
 
     const reciboNumero = `REC-2026-${String(cobranzas.length + 420).padStart(5, "0")}`;
     const totalAPagar = monto + recargoMora;
@@ -93,9 +104,15 @@ export default function CobranzasPage(): React.ReactElement {
       estudianteId,
       estudianteNombre,
       estudianteDni,
+      legajoNumero,
+      cursoNombre,
       concepto,
       mesPeriodo,
-      monto,
+      montoBaseEfectivo: monto,
+      montoBaseTransferencia: Math.round(monto * 1.1),
+      montoBase: monto,
+      tramoFecha: "tramo_1_10",
+      porcentajeRecargo: 0,
       recargoMora,
       totalAPagar,
       fechaVencimiento,
@@ -104,25 +121,11 @@ export default function CobranzasPage(): React.ReactElement {
       cajeroResponsable: null,
       estado: "Pendiente",
       comprobanteReferencia: null,
-      observaciones: "Arancel mensual emitido por tesorería.",
+      observaciones: "Arancel mensual emitido por administración central.",
     };
 
     addCobranza(newCob);
     setModalNewOpen(false);
-  };
-
-  const handleConfirmPayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedCob) return;
-
-    registrarPago(
-      selectedCob.id,
-      metodoPagoCobro,
-      comprobanteRef,
-      `${currentUser.name} (${currentUser.role})`
-    );
-
-    setModalPayOpen(false);
   };
 
   const handleConfirmDelete = () => {
@@ -132,62 +135,6 @@ export default function CobranzasPage(): React.ReactElement {
     setConfirmDeleteOpen(false);
   };
 
-  // Recibo Oficial de Caja en PDF
-  const handlePrintOfficialReceipt = (item: CobranzaItem) => {
-    const htmlBody = `
-      <div style="font-size: 13px; line-height: 1.6;">
-        <div style="border: 2px solid #00205B; border-radius: 8px; padding: 20px; background: #fafafa;">
-          <div style="display: flex; justify-content: space-between; border-bottom: 2px dashed #00205B; padding-bottom: 12px; margin-bottom: 16px;">
-            <div>
-              <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold;">Comprobante Oficial de Caja</span>
-              <h2 style="margin: 2px 0 0 0; color: #00205B; font-size: 22px; font-weight: 900;">${item.reciboNumero}</h2>
-            </div>
-            <div style="text-align: right;">
-              <span style="font-size: 11px; color: #64748b;">Fecha de Operación</span>
-              <div style="font-weight: bold; color: #1e293b;">${item.fechaPago ? formatDate(item.fechaPago) : formatDate(new Date().toISOString())}</div>
-              <div style="font-size: 11px; color: #E63956; font-weight: bold;">ORIGINAL - CLIENTE</div>
-            </div>
-          </div>
-
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; background: #fff;">
-            <tbody>
-              <tr>
-                <td style="padding: 6px 12px; font-weight: bold; width: 30%;">Estudiante:</td>
-                <td style="padding: 6px 12px;">${item.estudianteNombre} (DNI ${item.estudianteDni})</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 12px; font-weight: bold;">Concepto Arancelario:</td>
-                <td style="padding: 6px 12px;">${item.concepto}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 12px; font-weight: bold;">Período / Mes:</td>
-                <td style="padding: 6px 12px;">${item.mesPeriodo}</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 12px; font-weight: bold;">Medio de Cancelación:</td>
-                <td style="padding: 6px 12px;">${item.metodoPago || "Efectivo en Ventanilla"} (Ref: ${item.comprobanteReferencia || "CAJA-ENSENADA"})</td>
-              </tr>
-              <tr>
-                <td style="padding: 6px 12px; font-weight: bold;">Cajero Operador:</td>
-                <td style="padding: 6px 12px;">${item.cajeroResponsable || "Mariana Beltrán (Secretaría)"}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; background: #00205B; color: white; padding: 12px 18px; border-radius: 6px;">
-            <span style="font-size: 14px; font-weight: bold;">TOTAL PERCIBIDO EN CONCEPTO DE ARANCEL:</span>
-            <span style="font-size: 20px; font-weight: 900;">${formatCurrency(item.totalAPagar)}</span>
-          </div>
-
-          <div style="margin-top: 24px; font-size: 10px; color: #64748b; text-align: center;">
-            Cultural Inglesa de Ensenada (EIS Institute) · Personería Jurídica DGCyE Nº 4812/98 · Calle La Paz Nº 525 · Ensenada
-          </div>
-        </div>
-      </div>
-    `;
-    openInstitutionalPrintPreview(`Recibo_Oficial_${item.reciboNumero}`, htmlBody);
-  };
-
   const filteredCobranzas =
     filterStatus === "TODOS"
       ? cobranzas
@@ -195,13 +142,14 @@ export default function CobranzasPage(): React.ReactElement {
 
   const handleExportExcel = () => {
     exportToExcelCSV(
-      "libro_caja_aranceles_eis",
+      "libro_caja_aranceles_eis_institute",
       [
         { header: "Recibo Nº", accessor: "reciboNumero" },
         { header: "Estudiante", accessor: "estudianteNombre" },
         { header: "DNI", accessor: "estudianteDni" },
+        { header: "Programa", accessor: "cursoNombre" },
         { header: "Concepto", accessor: "concepto" },
-        { header: "Monto", accessor: (c) => formatCurrency(c.monto) },
+        { header: "Monto Base", accessor: (c) => formatCurrency(c.montoBase) },
         { header: "Recargo Mora", accessor: (c) => formatCurrency(c.recargoMora) },
         { header: "Total", accessor: (c) => formatCurrency(c.totalAPagar) },
         { header: "Fecha Pago", accessor: (c) => (c.fechaPago ? formatDate(c.fechaPago) : "-") },
@@ -214,13 +162,13 @@ export default function CobranzasPage(): React.ReactElement {
 
   const handleExportPdf = () => {
     const htmlBody = `
-      <p style="font-size: 13px;">Libro Diario de Caja y Estado Arancelario - EIS Institute:</p>
+      <p style="font-size: 13px;">Libro Diario de Caja y Aranceles - Cultural Inglesa de Ensenada (EIS Institute):</p>
       <table>
         <thead>
           <tr>
             <th>Recibo Nº</th>
             <th>Estudiante</th>
-            <th>Concepto</th>
+            <th>Curso</th>
             <th>Vencimiento</th>
             <th>Total</th>
             <th>Medio</th>
@@ -234,7 +182,7 @@ export default function CobranzasPage(): React.ReactElement {
             <tr>
               <td><strong>${c.reciboNumero}</strong></td>
               <td>${c.estudianteNombre}</td>
-              <td>${c.concepto}</td>
+              <td>${c.cursoNombre}</td>
               <td>${formatDate(c.fechaVencimiento)}</td>
               <td>${formatCurrency(c.totalAPagar)}</td>
               <td>${c.metodoPago || "-"}</td>
@@ -246,7 +194,7 @@ export default function CobranzasPage(): React.ReactElement {
         </tbody>
       </table>
     `;
-    openInstitutionalPrintPreview("Libro Diario de Cobranzas y Caja", htmlBody);
+    openInstitutionalPrintPreview("Libro Diario de Caja EIS", htmlBody);
   };
 
   const columns: ColumnDef<CobranzaItem>[] = [
@@ -259,13 +207,15 @@ export default function CobranzasPage(): React.ReactElement {
     },
     {
       id: "estudiante",
-      header: "Estudiante / Titular",
+      header: "Estudiante / Programa",
       accessorKey: "estudianteNombre",
       sortable: true,
       cell: (item) => (
         <div>
           <span className="font-bold text-slate-900 block">{item.estudianteNombre}</span>
-          <span className="text-[11px] font-mono text-slate-400">DNI {item.estudianteDni}</span>
+          <span className="text-[11px] font-mono text-slate-500">
+            DNI {item.estudianteDni} · {item.cursoNombre}
+          </span>
         </div>
       ),
     },
@@ -294,7 +244,7 @@ export default function CobranzasPage(): React.ReactElement {
           </span>
           {item.recargoMora > 0 && (
             <span className="text-[10px] text-rose-600 font-semibold block">
-              + {formatCurrency(item.recargoMora)} mora
+              + {formatCurrency(item.recargoMora)} ({item.porcentajeRecargo}%)
             </span>
           )}
         </div>
@@ -342,9 +292,66 @@ export default function CobranzasPage(): React.ReactElement {
 
   return (
     <div className="space-y-6">
+      {/* 4 Financial KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+            Efectivo en Caja Diaria
+          </span>
+          <span className="text-2xl font-black text-emerald-700 mt-1 block">
+            {formatCurrency(totalEfectivo)}
+          </span>
+          <span className="text-[11px] text-slate-500 font-medium mt-0.5 block flex items-center gap-1">
+            <Banknote className="w-3 h-3 text-emerald-600" />
+            Percibido en mostrador
+          </span>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+            Transferencias Bancarias
+          </span>
+          <span className="text-2xl font-black text-blue-800 mt-1 block">
+            {formatCurrency(totalTransferencia)}
+          </span>
+          <span className="text-[11px] text-slate-500 font-medium mt-0.5 block flex items-center gap-1">
+            <CreditCard className="w-3 h-3 text-blue-600" />
+            Conciliadas con BAPRO
+          </span>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+            Cuotas Pagadas en Término
+          </span>
+          <span className="text-2xl font-black text-[#00205B] mt-1 block">
+            {pagadasCount}
+          </span>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-0.5 block">
+            Sin recargos por mora
+          </span>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+            Meses Vencidos / En Mora
+          </span>
+          <span className="text-2xl font-black text-rose-700 mt-1 block">
+            {vencidasCount}
+          </span>
+          <span className="text-[11px] text-rose-600 font-semibold mt-0.5 block">
+            +30% recargo aplicado
+          </span>
+        </div>
+      </div>
+
+      {/* FLUIDO CRÍTICO 1: COBRO RÁPIDO EN SECRETARÍA */}
+      <CobroRapidoDesk onCobroRegistrado={(item) => setSelectedCob(item)} />
+
+      {/* HISTORIAL GENERAL DE ARANCELES Y CAJA */}
       <DataTable
-        title="Pago de Cuotas y Caja"
-        subtitle="Control de aranceles, cobro rápido en ventanilla/transferencia y emisión de recibos oficiales"
+        title="Libro de Cobranzas y Aranceles"
+        subtitle="Auditoría de pagos, estados de cuenta y reimpresión de comprobantes no fiscales"
         data={filteredCobranzas}
         columns={columns}
         keyExtractor={(item) => item.id}
@@ -374,39 +381,30 @@ export default function CobranzasPage(): React.ReactElement {
         }
         customRowActions={(item) => (
           <div className="flex items-center gap-1">
-            {item.estado !== "Pagado" && (
-              <button
-                onClick={() => handleOpenPayModal(item)}
-                title="Cobrar en Ventanilla / Asentar Transferencia"
-                className="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs flex items-center gap-1"
-              >
-                <Wallet className="w-3.5 h-3.5" />
-                <span>Cobrar</span>
-              </button>
-            )}
             <button
-              onClick={() => handlePrintOfficialReceipt(item)}
-              title="Emitir Recibo Oficial PDF"
-              className="p-1.5 rounded-lg text-slate-500 hover:text-[#00205B] hover:bg-blue-50 transition-colors"
+              onClick={() => handleOpenReceipt(item)}
+              title="Emitir / Imprimir Recibo No Fiscal"
+              className="px-2 py-1 rounded-lg bg-blue-50 text-[#00205B] hover:bg-blue-100 font-bold text-xs flex items-center gap-1 transition-colors"
             >
-              <Printer className="w-4 h-4 text-[#00205B]" />
+              <Printer className="w-3.5 h-3.5" />
+              <span>Recibo</span>
             </button>
           </div>
         )}
         initialPageSize={8}
       />
 
-      {/* MODAL: EMITIR CUOTA / ARANCEL */}
+      {/* MODAL: EMITIR CUOTA MANUAL */}
       <Modal
         isOpen={modalNewOpen}
         onClose={() => setModalNewOpen(false)}
-        title="Emisión de Arancel / Cuota"
-        subtitle="Genere el devengamiento de arancel para un estudiante"
+        title="Emisión de Arancel / Cuota Individual"
+        subtitle="Genere el devengamiento arancelario para un estudiante"
         maxWidth="lg"
       >
         <form onSubmit={handleSaveNewArancel} className="space-y-4 py-2">
           <Select
-            label="Estudiante"
+            label="Estudiante Titular"
             value={estudianteId}
             onChange={(e) => setEstudianteId(e.target.value)}
             options={estudiantes.map((e) => ({
@@ -445,7 +443,7 @@ export default function CobranzasPage(): React.ReactElement {
               onChange={(e) => setRecargoMora(Number(e.target.value))}
             />
             <Input
-              label="Fecha Límite de Vencimiento"
+              label="Fecha Límite Vencimiento"
               type="date"
               value={fechaVencimiento}
               onChange={(e) => setFechaVencimiento(e.target.value)}
@@ -454,7 +452,7 @@ export default function CobranzasPage(): React.ReactElement {
           </div>
 
           <div className="p-3 bg-blue-50 rounded-xl text-xs flex justify-between items-center text-[#00205B]">
-            <span>Total devengado:</span>
+            <span>Total a devengar:</span>
             <span className="font-extrabold text-base">{formatCurrency(monto + recargoMora)}</span>
           </div>
 
@@ -463,76 +461,17 @@ export default function CobranzasPage(): React.ReactElement {
               Cancelar
             </Button>
             <Button type="submit" variant="coral" size="sm">
-              Emitir Arancel
+              Emitir Cuota
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* MODAL: COBRO RÁPIDO */}
-      <Modal
-        isOpen={modalPayOpen}
-        onClose={() => setModalPayOpen(false)}
-        title="Registro de Cobro Rápido"
-        subtitle={`Asentar cobranza para ${selectedCob?.estudianteNombre}`}
-        maxWidth="md"
-      >
-        {selectedCob && (
-          <form onSubmit={handleConfirmPayment} className="space-y-4 py-2">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Recibo:</span>
-                <span className="font-bold text-[#00205B]">{selectedCob.reciboNumero}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Concepto:</span>
-                <span className="font-semibold">{selectedCob.concepto}</span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                <span className="font-bold text-slate-700">Total a Percibir:</span>
-                <span className="text-lg font-black text-emerald-700">
-                  {formatCurrency(selectedCob.totalAPagar)}
-                </span>
-              </div>
-            </div>
-
-            <Select
-              label="Método de Pago Utilizado"
-              value={metodoPagoCobro}
-              onChange={(e) => setMetodoPagoCobro(e.target.value as MetodoCobro)}
-              options={[
-                { value: "Efectivo", label: "Efectivo en Ventanilla" },
-                { value: "Transferencia", label: "Transferencia Bancaria Inmediata" },
-                { value: "Tarjeta Débito", label: "Tarjeta de Débito (Posnet)" },
-                { value: "Tarjeta Crédito", label: "Tarjeta de Crédito" },
-              ]}
-            />
-
-            <Input
-              label="Comprobante / Nº Transacción de Referencia"
-              value={comprobanteRef}
-              onChange={(e) => setComprobanteRef(e.target.value)}
-              placeholder="ej: TRF-BAPRO-91823"
-              required
-            />
-
-            <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setModalPayOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" variant="primary" size="sm" icon={<CheckCircle2 className="w-4 h-4" />}>
-                Confirmar y Emitir Recibo
-              </Button>
-            </div>
-          </form>
-        )}
       </Modal>
 
       {/* MODAL: VER DETALLE */}
       <Modal
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        title={selectedCob?.reciboNumero || "Detalle de Recibo"}
+        title={selectedCob?.reciboNumero || "Detalle de Comprobante"}
         maxWidth="md"
       >
         {selectedCob && (
@@ -547,23 +486,29 @@ export default function CobranzasPage(): React.ReactElement {
                 <span className="font-bold text-slate-800">{selectedCob.estudianteNombre}</span>
               </div>
               <div className="flex justify-between">
+                <span className="text-slate-500">DNI:</span>
+                <span className="font-mono">{selectedCob.estudianteDni}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Programa:</span>
+                <span className="font-semibold text-slate-800">{selectedCob.cursoNombre}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-slate-500">Concepto:</span>
                 <span>{selectedCob.concepto}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Período:</span>
-                <span>{selectedCob.mesPeriodo}</span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-slate-500">Monto Base:</span>
-                <span>{formatCurrency(selectedCob.monto)}</span>
+                <span>{formatCurrency(selectedCob.montoBase)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Recargo por Mora:</span>
-                <span>{formatCurrency(selectedCob.recargoMora)}</span>
+                <span className="text-rose-600 font-bold">
+                  {formatCurrency(selectedCob.recargoMora)} ({selectedCob.porcentajeRecargo}%)
+                </span>
               </div>
               <div className="flex justify-between font-bold text-sm text-[#00205B] pt-1 border-t">
-                <span>Total:</span>
+                <span>Total Liquidado:</span>
                 <span>{formatCurrency(selectedCob.totalAPagar)}</span>
               </div>
               <div className="flex justify-between">
@@ -572,7 +517,7 @@ export default function CobranzasPage(): React.ReactElement {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Operador:</span>
-                <span>{selectedCob.cajeroResponsable || "-"}</span>
+                <span>{selectedCob.cajeroResponsable || "Mariana Beltrán (Secretaría)"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Estado:</span>
@@ -584,15 +529,15 @@ export default function CobranzasPage(): React.ReactElement {
 
             <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
               <Button
-                variant="outline"
+                variant="coral"
                 size="sm"
                 onClick={() => {
-                  handlePrintOfficialReceipt(selectedCob);
                   setDetailModalOpen(false);
+                  setReciboModalOpen(true);
                 }}
-                icon={<Printer className="w-4 h-4 text-[#00205B]" />}
+                icon={<Printer className="w-4 h-4" />}
               >
-                Imprimir Recibo Oficial
+                Imprimir Recibo No Fiscal
               </Button>
               <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
                 Cerrar
@@ -601,6 +546,13 @@ export default function CobranzasPage(): React.ReactElement {
           </div>
         )}
       </Modal>
+
+      {/* RECIBO OFICIAL NO FISCAL MODAL */}
+      <ReciboNoFiscalModal
+        isOpen={reciboModalOpen}
+        onClose={() => setReciboModalOpen(false)}
+        cobranza={selectedCob}
+      />
 
       {/* CONFIRM DELETE */}
       <ConfirmDialog

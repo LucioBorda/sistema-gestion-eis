@@ -35,6 +35,14 @@ import { CobranzaItem, MetodoCobro } from "../cobranzas/types";
 import { INITIAL_COBRANZAS } from "../cobranzas/mocks";
 import { LandingPhotoItem } from "../landing-cms/types";
 import { INITIAL_LANDING_PHOTOS } from "../landing-cms/mocks";
+import { CursoOficial } from "../cursos/types";
+import { CURSOS_OFICIALES_EIS } from "../cursos/mocks";
+import {
+  PostulanteItem,
+  ExamenDigitalizado,
+  ResultadoCorreccion,
+} from "../admisiones/types";
+import { INITIAL_POSTULANTES } from "../admisiones/mocks";
 
 interface DataContextType {
   institucion: InstitucionData;
@@ -105,6 +113,19 @@ interface DataContextType {
   togglePhotoActive: (id: string) => void;
   deleteLandingPhoto: (id: string) => void;
   reorderPhoto: (id: string, direction: "up" | "down") => void;
+  cursos: CursoOficial[];
+  postulantes: PostulanteItem[];
+  addPostulante: (item: PostulanteItem) => void;
+  updatePostulante: (item: PostulanteItem) => void;
+  subirExamenFisico: (postulanteId: string, examen: ExamenDigitalizado) => void;
+  corregirTestDirectora: (postulanteId: string, resultado: ResultadoCorreccion) => void;
+  inscribirPreAlumno: (
+    postulanteId: string,
+    cursoId: string,
+    comisionId: string,
+    medioCobro: "Efectivo" | "Transferencia",
+    montoMatricula: number
+  ) => void;
   resetAllDataToDefaults: () => void;
 }
 
@@ -181,6 +202,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [landingPhotos, setLandingPhotos] = useState<LandingPhotoItem[]>(() =>
     loadFromStorage("landing_photos", INITIAL_LANDING_PHOTOS)
   );
+  const [cursos, setCursos] = useState<CursoOficial[]>(() =>
+    loadFromStorage("cursos_19", CURSOS_OFICIALES_EIS)
+  );
+  const [postulantes, setPostulantes] = useState<PostulanteItem[]>(() =>
+    loadFromStorage("postulantes", INITIAL_POSTULANTES)
+  );
 
   // Sync state changes to storage
   useEffect(() => saveToStorage("institucion", institucion), [institucion]);
@@ -200,6 +227,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveToStorage("calificaciones", calificaciones), [calificaciones]);
   useEffect(() => saveToStorage("cobranzas", cobranzas), [cobranzas]);
   useEffect(() => saveToStorage("landing_photos", landingPhotos), [landingPhotos]);
+  useEffect(() => saveToStorage("cursos_19", cursos), [cursos]);
+  useEffect(() => saveToStorage("postulantes", postulantes), [postulantes]);
 
   // Ciclos
   const addCiclo = (item: CicloLectivo) => setCiclosLectivos((prev) => [item, ...prev]);
@@ -249,7 +278,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsuarios((prev) => prev.map((u) => (u.id === item.id ? item : u)));
   const deleteUsuario = (id: string) =>
     setUsuarios((prev) => prev.filter((u) => u.id !== id));
-  const resetUsuarioPassword = (id: string) => {
+  const resetUsuarioPassword = (_id: string) => {
     alert("Se ha generado un enlace seguro de reseteo de clave y fue remitido al email institucional del usuario.");
   };
 
@@ -291,7 +320,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Inscripciones
   const addInscripcion = (item: InscripcionItem) => {
     setInscripciones((prev) => [item, ...prev]);
-    // increment occupied capacity on commission
     setComisiones((prev) =>
       prev.map((c) =>
         c.id === item.comisionId ? { ...c, cupoOcupado: c.cupoOcupado + 1 } : c
@@ -368,6 +396,126 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Postulantes / Admisiones State Machine
+  const addPostulante = (item: PostulanteItem) =>
+    setPostulantes((prev) => [item, ...prev]);
+
+  const updatePostulante = (item: PostulanteItem) =>
+    setPostulantes((prev) => prev.map((p) => (p.id === item.id ? item : p)));
+
+  const subirExamenFisico = (postulanteId: string, examen: ExamenDigitalizado) => {
+    setPostulantes((prev) =>
+      prev.map((p) =>
+        p.id === postulanteId
+          ? {
+              ...p,
+              estado: "Test en Corrección",
+              examenDigitalizado: examen,
+            }
+          : p
+      )
+    );
+  };
+
+  const corregirTestDirectora = (
+    postulanteId: string,
+    resultado: ResultadoCorreccion
+  ) => {
+    setPostulantes((prev) =>
+      prev.map((p) =>
+        p.id === postulanteId
+          ? {
+              ...p,
+              estado: "Pre-Alumno",
+              resultadoCorreccion: resultado,
+            }
+          : p
+      )
+    );
+  };
+
+  const inscribirPreAlumno = (
+    postulanteId: string,
+    cursoId: string,
+    comisionId: string,
+    medioCobro: "Efectivo" | "Transferencia",
+    montoMatricula: number
+  ) => {
+    const post = postulantes.find((p) => p.id === postulanteId);
+    if (!post) return;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const newLegajo = `LEG-2026-${String(estudiantes.length + 10).padStart(3, "0")}`;
+    const cursoObj = cursos.find((c) => c.id === cursoId);
+    const cursoNombre = cursoObj ? cursoObj.nombre : "General";
+
+    // 1. Crear Estudiante Regular
+    const nuevoEstudiante: EstudianteItem = {
+      id: `est-${Date.now()}`,
+      legajoNumero: newLegajo,
+      dni: post.dni,
+      nombreCompleto: post.nombreCompleto,
+      fechaNacimiento: "2013-05-10",
+      edad: post.edad,
+      email: post.email,
+      telefono: post.telefono,
+      tutorResponsable: `${post.nombreCompleto} (Titular)`,
+      tutorTelefono: post.telefono,
+      tutorEmail: post.email,
+      contactoEmergencia: post.telefono,
+      cursoActual: `${cursoNombre} - Comisión Presencial`,
+      comisionId: comisionId || "com-1",
+      estado: "Regular",
+      fechaInscripcion: todayStr,
+      saldoPendiente: 0,
+      convenioAngliaActivo: true,
+    };
+    setEstudiantes((prev) => [nuevoEstudiante, ...prev]);
+
+    // 2. Transición del postulante a Alumno Activo
+    setPostulantes((prev) =>
+      prev.map((p) =>
+        p.id === postulanteId
+          ? {
+              ...p,
+              estado: "Alumno Activo",
+              cursoInscritoId: cursoId,
+              comisionInscritaId: comisionId,
+            }
+          : p
+      )
+    );
+
+    // 3. Emitir y cobrar Matrícula en Cobranzas
+    const reciboNumero = `REC-2026-${String(cobranzas.length + 500).padStart(5, "0")}`;
+    const nuevaCobranza: CobranzaItem = {
+      id: `cob-${Date.now()}`,
+      reciboNumero,
+      estudianteId: nuevoEstudiante.id,
+      estudianteNombre: post.nombreCompleto,
+      estudianteDni: post.dni,
+      legajoNumero: newLegajo,
+      cursoNombre,
+      concepto: `Matrícula e Inscripción Ciclo 2026 (${cursoNombre})`,
+      mesPeriodo: "Matrícula 2026",
+      montoBaseEfectivo: montoMatricula,
+      montoBaseTransferencia: Math.round(montoMatricula * 1.1),
+      montoBase: montoMatricula,
+      tramoFecha: "tramo_1_10",
+      porcentajeRecargo: 0,
+      recargoMora: 0,
+      totalAPagar: montoMatricula,
+      fechaVencimiento: todayStr,
+      fechaPago: todayStr,
+      metodoPago: medioCobro,
+      cajeroResponsable: "Mariana Beltrán (Secretaría)",
+      estado: "Pagado",
+      comprobanteReferencia: `${medioCobro === "Efectivo" ? "CAJA-VENTANILLA" : "TRF-ONLINE"}-${Date.now().toString().slice(-4)}`,
+      observaciones: `Matrícula confirmada tras Test Nivelatorio y pase a Alumno Activo.`,
+    };
+    setCobranzas((prev) => [nuevaCobranza, ...prev]);
+  };
+
   const resetAllDataToDefaults = () => {
     if (confirm("¿Desea restaurar todos los datos a los valores semilla iniciales?")) {
       setInstitucion(INITIAL_INSTITUCION_DATA);
@@ -387,6 +535,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCalificaciones(INITIAL_CALIFICACIONES);
       setCobranzas(INITIAL_COBRANZAS);
       setLandingPhotos(INITIAL_LANDING_PHOTOS);
+      setCursos(CURSOS_OFICIALES_EIS);
+      setPostulantes(INITIAL_POSTULANTES);
       localStorage.clear();
       window.location.reload();
     }
@@ -463,6 +613,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         togglePhotoActive,
         deleteLandingPhoto,
         reorderPhoto,
+        cursos,
+        postulantes,
+        addPostulante,
+        updatePostulante,
+        subirExamenFisico,
+        corregirTestDirectora,
+        inscribirPreAlumno,
         resetAllDataToDefaults,
       }}
     >

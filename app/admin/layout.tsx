@@ -68,7 +68,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, setRole, activeSessions, terminateSession, logout } = useAuth();
-  const { cobranzas, inscripciones, resetAllDataToDefaults } = useGlobalData();
+  const { cobranzas, inscripciones, postulantes, resetAllDataToDefaults } = useGlobalData();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -79,6 +79,9 @@ export default function AdminLayout({
   // Compute live badges
   const vencidasCount = cobranzas.filter((c) => c.estado === "Vencido").length;
   const inscripcionesPendientes = inscripciones.filter((i) => i.estado === "Pendiente").length;
+  const admisionesPendientes =
+    postulantes?.filter((p) => p.estado === "Test Pendiente" || p.estado === "Test en Corrección")
+      .length || 0;
 
   const navSections: NavSection[] = [
     {
@@ -102,6 +105,30 @@ export default function AdminLayout({
       ],
     },
     {
+      title: "FLUJOS CRÍTICOS Y ADMISIÓN",
+      items: [
+        {
+          title: "Admisiones & Test Nivelatorio",
+          href: "/admin/admisiones",
+          icon: UserPlus,
+          badge: admisionesPendientes > 0 ? `${admisionesPendientes} tests` : undefined,
+          badgeVariant: "coral",
+        },
+        {
+          title: "Cobranzas & Caja Diaria",
+          href: "/admin/cobranzas",
+          icon: Wallet,
+          badge: vencidasCount > 0 ? `${vencidasCount} mora` : undefined,
+          badgeVariant: "coral",
+        },
+        {
+          title: "Catálogo Cursos (19 Niveles)",
+          href: "/admin/cursos",
+          icon: BookOpen,
+        },
+      ],
+    },
+    {
       title: "ESTRUCTURA ACADÉMICA",
       items: [
         {
@@ -117,7 +144,7 @@ export default function AdminLayout({
         {
           title: "Catálogo de Materias",
           href: "/admin/materias",
-          icon: BookOpen,
+          icon: BookMarked,
         },
         {
           title: "Asignación de Materias",
@@ -137,7 +164,7 @@ export default function AdminLayout({
         {
           title: "Inscripciones y Cupos",
           href: "/admin/inscripciones",
-          icon: UserPlus,
+          icon: UserCheck,
           badge: inscripcionesPendientes > 0 ? inscripcionesPendientes : undefined,
           badgeVariant: "warning",
         },
@@ -180,18 +207,6 @@ export default function AdminLayout({
           title: "Personal Docente",
           href: "/admin/personal-docente",
           icon: UserCheck,
-        },
-      ],
-    },
-    {
-      title: "FINANZAS / CAJA",
-      items: [
-        {
-          title: "Pago de Cuotas y Caja",
-          href: "/admin/cobranzas",
-          icon: Wallet,
-          badge: vencidasCount > 0 ? `${vencidasCount} mora` : undefined,
-          badgeVariant: "coral",
         },
       ],
     },
