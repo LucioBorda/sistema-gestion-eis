@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import { useGlobalData } from "@/features/core/DataContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import { CobranzaItem, MetodoCobro, EstadoPago } from "@/features/cobranzas/types";
+import { EstudianteItem } from "@/features/estudiantes/types";
 import { CobroRapidoDesk } from "@/features/cobranzas/components/CobroRapidoDesk";
 import { ReciboNoFiscalModal } from "@/features/cobranzas/components/ReciboNoFiscalModal";
+import { WhatsAppCobranzaModal } from "@/features/cobranzas/components/WhatsAppCobranzaModal";
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -24,6 +26,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowUpRight,
+  MessageCircle,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { exportToExcelCSV, openInstitutionalPrintPreview } from "@/lib/exportUtils";
@@ -36,9 +39,23 @@ export default function CobranzasPage(): React.ReactElement {
   const [reciboModalOpen, setReciboModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 
   const [selectedCob, setSelectedCob] = useState<CobranzaItem | null>(null);
+  const [selectedStudentForWA, setSelectedStudentForWA] = useState<EstudianteItem | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
+
+  const handleOpenWhatsApp = (item: CobranzaItem) => {
+    setSelectedCob(item);
+    const student =
+      estudiantes.find(
+        (e) =>
+          e.id === item.estudianteId ||
+          e.dni.replace(/\./g, "") === item.estudianteDni.replace(/\./g, "")
+      ) || null;
+    setSelectedStudentForWA(student);
+    setWhatsAppModalOpen(true);
+  };
 
   // KPI Calculations
   const totalEfectivo = cobranzas
@@ -321,7 +338,7 @@ export default function CobranzasPage(): React.ReactElement {
           </div>
         }
         customRowActions={(item) => (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => handleOpenReceipt(item)}
               title="Emitir / Imprimir Recibo No Fiscal"
@@ -329,6 +346,14 @@ export default function CobranzasPage(): React.ReactElement {
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Recibo</span>
+            </button>
+            <button
+              onClick={() => handleOpenWhatsApp(item)}
+              title="Enviar comprobante o recordatorio por WhatsApp"
+              className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs flex items-center gap-1.5 transition-colors border border-emerald-300 shadow-2xs"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span>WhatsApp</span>
             </button>
           </div>
         )}
@@ -395,18 +420,32 @@ export default function CobranzasPage(): React.ReactElement {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-              <Button
-                variant="coral"
-                size="sm"
-                onClick={() => {
-                  setDetailModalOpen(false);
-                  setReciboModalOpen(true);
-                }}
-                icon={<Printer className="w-4 h-4" />}
-              >
-                Imprimir Recibo No Fiscal
-              </Button>
+            <div className="pt-3 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="coral"
+                  size="sm"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    setReciboModalOpen(true);
+                  }}
+                  icon={<Printer className="w-4 h-4" />}
+                >
+                  Imprimir Recibo
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    handleOpenWhatsApp(selectedCob);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Enviar por WhatsApp</span>
+                </button>
+              </div>
+
               <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
                 Cerrar
               </Button>
@@ -420,6 +459,15 @@ export default function CobranzasPage(): React.ReactElement {
         isOpen={reciboModalOpen}
         onClose={() => setReciboModalOpen(false)}
         cobranza={selectedCob}
+        onNotifyWhatsApp={(cob) => handleOpenWhatsApp(cob)}
+      />
+
+      {/* MODAL COMUNICACIÓN OFICIAL POR WHATSAPP */}
+      <WhatsAppCobranzaModal
+        isOpen={whatsAppModalOpen}
+        onClose={() => setWhatsAppModalOpen(false)}
+        cobranza={selectedCob}
+        estudiante={selectedStudentForWA}
       />
 
       {/* CONFIRM DELETE */}

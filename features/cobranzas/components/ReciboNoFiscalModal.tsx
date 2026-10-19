@@ -4,19 +4,21 @@ import React, { useRef } from "react";
 import { CobranzaItem } from "../types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { Printer, X, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Printer, X, CheckCircle2, ShieldAlert, MessageCircle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface ReciboNoFiscalModalProps {
   isOpen: boolean;
   onClose: () => void;
   cobranza: CobranzaItem | null;
+  onNotifyWhatsApp?: (cobranza: CobranzaItem) => void;
 }
 
 export const ReciboNoFiscalModal: React.FC<ReciboNoFiscalModalProps> = ({
   isOpen,
   onClose,
   cobranza,
+  onNotifyWhatsApp,
 }) => {
   const printRef = useRef<HTMLDivElement | null>(null);
 
@@ -194,18 +196,36 @@ export const ReciboNoFiscalModal: React.FC<ReciboNoFiscalModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
           <Button variant="secondary" size="sm" onClick={onClose}>
             Cerrar
           </Button>
-          <Button
-            variant="coral"
-            size="sm"
-            onClick={handlePrint}
-            icon={<Printer className="w-4 h-4" />}
-          >
-            Imprimir Recibo (Ctrl + P)
-          </Button>
+
+          <div className="flex items-center gap-2">
+            {onNotifyWhatsApp && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onNotifyWhatsApp(cobranza);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                title="Enviar comprobante por WhatsApp al alumno o familia"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                <span>Enviar por WhatsApp</span>
+              </button>
+            )}
+
+            <Button
+              variant="coral"
+              size="sm"
+              onClick={handlePrint}
+              icon={<Printer className="w-4 h-4" />}
+            >
+              Imprimir Recibo (Ctrl + P)
+            </Button>
+          </div>
         </div>
       </div>
     </Modal>

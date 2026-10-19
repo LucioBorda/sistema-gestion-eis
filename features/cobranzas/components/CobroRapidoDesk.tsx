@@ -7,6 +7,7 @@ import { CobranzaItem, MetodoCobro } from "../types";
 import { EstudianteItem } from "@/features/estudiantes/types";
 import { CalculadoraVuelto } from "./CalculadoraVuelto";
 import { ReciboNoFiscalModal } from "./ReciboNoFiscalModal";
+import { WhatsAppCobranzaModal } from "./WhatsAppCobranzaModal";
 import { calcularTramoYTarifa } from "../tariffCalculator";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -23,6 +24,7 @@ import {
   User,
   ArrowRight,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -45,6 +47,7 @@ export const CobroRapidoDesk: React.FC<CobroRapidoDeskProps> = ({
   const [montoRecibido, setMontoRecibido] = useState<number>(0);
   const [comprobanteRef, setComprobanteRef] = useState<string>("");
   const [reciboModalOpen, setReciboModalOpen] = useState(false);
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [lastCobranzaEmitida, setLastCobranzaEmitida] = useState<CobranzaItem | null>(null);
   const [currentDay, setCurrentDay] = useState<number>(18);
 
@@ -341,6 +344,15 @@ export const CobroRapidoDesk: React.FC<CobroRapidoDeskProps> = ({
                   <span>Estado: Meses Anteriores Adeudados (+30% mora)</span>
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => setWhatsAppModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-colors shadow-2xs"
+                title="Contactar al alumno o tutor por WhatsApp"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>WhatsApp</span>
+              </button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -474,6 +486,18 @@ export const CobroRapidoDesk: React.FC<CobroRapidoDeskProps> = ({
         isOpen={reciboModalOpen}
         onClose={() => setReciboModalOpen(false)}
         cobranza={lastCobranzaEmitida}
+        onNotifyWhatsApp={(cob) => {
+          setLastCobranzaEmitida(cob);
+          setWhatsAppModalOpen(true);
+        }}
+      />
+
+      {/* Modal Comunicación Oficial por WhatsApp */}
+      <WhatsAppCobranzaModal
+        isOpen={whatsAppModalOpen}
+        onClose={() => setWhatsAppModalOpen(false)}
+        cobranza={lastCobranzaEmitida || studentAccountData?.pendingToPay || null}
+        estudiante={selectedEstudiante}
       />
     </div>
   );
