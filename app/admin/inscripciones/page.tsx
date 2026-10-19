@@ -295,13 +295,13 @@ function InscripcionesContent(): React.ReactElement {
       return;
     }
 
-    if (
-      postMetodoPago === "Efectivo" &&
-      montoRecibidoMatricula > 0 &&
-      montoRecibidoMatricula < postArancel
-    ) {
-      alert("El monto recibido en efectivo es menor al arancel de matrícula a cobrar.");
-      return;
+    if (postMetodoPago === "Efectivo") {
+      if (!montoRecibidoMatricula || montoRecibidoMatricula < postArancel) {
+        alert(
+          `El monto en el cobro (${formatCurrency(montoRecibidoMatricula || 0)}) debe ser mayor o igual al cobro concurrente de matrícula (${formatCurrency(postArancel)}). No puede registrarse por un importe menor.`
+        );
+        return;
+      }
     }
 
     const matchedCurso = cursos[0]?.id || "cur-1";
@@ -377,13 +377,13 @@ function InscripcionesContent(): React.ReactElement {
       return;
     }
 
-    if (
-      postMetodoPago === "Efectivo" &&
-      montoRecibidoMatricula > 0 &&
-      montoRecibidoMatricula < postArancel
-    ) {
-      alert("El monto recibido en efectivo es menor al arancel de matrícula a cobrar.");
-      return;
+    if (postMetodoPago === "Efectivo") {
+      if (!montoRecibidoMatricula || montoRecibidoMatricula < postArancel) {
+        alert(
+          `El monto en el cobro (${formatCurrency(montoRecibidoMatricula || 0)}) debe ser mayor o igual al cobro concurrente de matrícula (${formatCurrency(postArancel)}). No puede registrarse por un importe menor.`
+        );
+        return;
+      }
     }
 
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -953,6 +953,16 @@ function InscripcionesContent(): React.ReactElement {
                     )}
                   </div>
 
+                  {/* Validación estricta de monto concurrente */}
+                  {postMetodoPago === "Efectivo" && (!montoRecibidoMatricula || montoRecibidoMatricula < postArancel) && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center gap-2.5">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                      <span>
+                        <strong>Cobro bloqueado:</strong> El monto recibido en efectivo ({formatCurrency(montoRecibidoMatricula || 0)}) no puede ser menor al cobro concurrente ({formatCurrency(postArancel)}). Ingrese un valor igual o superior para emitir el recibo.
+                      </span>
+                    </div>
+                  )}
+
                   {/* Botón de Confirmación y Emisión */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <span className="text-xs text-slate-500">
@@ -962,7 +972,12 @@ function InscripcionesContent(): React.ReactElement {
                       type="submit"
                       variant="coral"
                       size="md"
-                      className="font-bold shadow-md shadow-[#E63956]/20"
+                      disabled={postMetodoPago === "Efectivo" && (!montoRecibidoMatricula || montoRecibidoMatricula < postArancel)}
+                      className={`font-bold shadow-md ${
+                        postMetodoPago === "Efectivo" && (!montoRecibidoMatricula || montoRecibidoMatricula < postArancel)
+                          ? "opacity-50 cursor-not-allowed"
+                          : "shadow-[#E63956]/20"
+                      }`}
                       icon={<Receipt className="w-4 h-4" />}
                     >
                       {selectedInscripcionParaAcreditar

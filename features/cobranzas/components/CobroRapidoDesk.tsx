@@ -153,9 +153,13 @@ export const CobroRapidoDesk: React.FC<CobroRapidoDeskProps> = ({
     const totalCobrado = calculoTarifa ? calculoTarifa.montoFinal : 54000;
     const vuelto = metodoPago === "Efectivo" ? Math.max(0, montoRecibido - totalCobrado) : 0;
 
-    if (metodoPago === "Efectivo" && montoRecibido > 0 && montoRecibido < totalCobrado) {
-      alert("El monto recibido en efectivo es menor al arancel total a cobrar.");
-      return;
+    if (metodoPago === "Efectivo") {
+      if (!montoRecibido || montoRecibido < totalCobrado) {
+        alert(
+          `El monto en el cobro (${formatCurrency(montoRecibido || 0)}) debe ser mayor o igual al cobro concurrente (${formatCurrency(totalCobrado)}). No puede registrarse por un importe menor.`
+        );
+        return;
+      }
     }
 
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -462,8 +466,18 @@ export const CobroRapidoDesk: React.FC<CobroRapidoDeskProps> = ({
               )}
             </div>
 
+            {/* Validación estricta de monto concurrente */}
+            {metodoPago === "Efectivo" && (!montoRecibido || montoRecibido < calculoTarifa.montoFinal) && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>
+                  <strong>Cobro bloqueado:</strong> El monto recibido en efectivo ({formatCurrency(montoRecibido || 0)}) no puede ser menor al cobro concurrente ({formatCurrency(calculoTarifa.montoFinal)}). Ingrese un valor igual o superior para emitir el recibo.
+                </span>
+              </div>
+            )}
+
             {/* Botón de Confirmación y Emisión */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
               <span className="text-xs text-slate-500">
                 Al confirmar, se emitirá automáticamente el <strong>Recibo No Fiscal</strong> correlativo.
               </span>
@@ -471,7 +485,12 @@ export const CobroRapidoDesk: React.FC<CobroRapidoDeskProps> = ({
                 type="submit"
                 variant="coral"
                 size="md"
-                className="font-bold shadow-md shadow-[#E63956]/20"
+                disabled={metodoPago === "Efectivo" && (!montoRecibido || montoRecibido < calculoTarifa.montoFinal)}
+                className={`font-bold shadow-md ${
+                  metodoPago === "Efectivo" && (!montoRecibido || montoRecibido < calculoTarifa.montoFinal)
+                    ? "opacity-50 cursor-not-allowed"
+                    : "shadow-[#E63956]/20"
+                }`}
                 icon={<Receipt className="w-4 h-4" />}
               >
                 Cobrar {formatCurrency(calculoTarifa.montoFinal)} y Emitir Recibo
