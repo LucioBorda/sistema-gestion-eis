@@ -166,12 +166,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [nivelesTurnos, setNivelesTurnos] = useState<NivelTurno[]>(() =>
     loadFromStorage("niveles", INITIAL_NIVELES_TURNOS)
   );
-  const [comisiones, setComisiones] = useState<Comision[]>(() =>
-    loadFromStorage("comisiones", INITIAL_COMISIONES)
-  );
-  const [aulas, setAulas] = useState<Aula[]>(() =>
-    loadFromStorage("aulas", INITIAL_AULAS)
-  );
+  const [comisiones, setComisiones] = useState<Comision[]>(() => {
+    const loaded = loadFromStorage<Comision[]>("comisiones", INITIAL_COMISIONES);
+    if (!Array.isArray(loaded) || loaded.some((c) => c.aulaId === "aula-magna" || c.aulaId === "aula-5" || c.aulaId === "aula-kinder")) {
+      return INITIAL_COMISIONES;
+    }
+    return loaded;
+  });
+  const [aulas, setAulas] = useState<Aula[]>(() => {
+    const loaded = loadFromStorage<Aula[]>("aulas", INITIAL_AULAS);
+    if (!Array.isArray(loaded) || loaded.length !== 4 || !loaded[0]?.horarioInicio) {
+      return INITIAL_AULAS;
+    }
+    return loaded;
+  });
   const [materias, setMaterias] = useState<Materia[]>(() =>
     loadFromStorage("materias", INITIAL_MATERIAS)
   );

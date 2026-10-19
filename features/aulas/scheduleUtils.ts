@@ -126,3 +126,40 @@ export function checkScheduleConflict(
 
   return { hasConflict: false };
 }
+
+export interface OperatingHoursCheckResult {
+  isWithinRange: boolean;
+  details?: string;
+}
+
+/**
+ * Valida si el horario de la comisión se encuentra dentro de la franja horaria permitida para el aula.
+ */
+export function checkWithinAulaOperatingHours(
+  diasHorarios: string,
+  horarioInicio?: string,
+  horarioFin?: string
+): OperatingHoursCheckResult {
+  if (!horarioInicio || !horarioFin || !diasHorarios) {
+    return { isWithinRange: true };
+  }
+
+  const parsed = parseScheduleString(diasHorarios);
+  if (!parsed.isValid) {
+    return { isWithinRange: true };
+  }
+
+  const [h1, m1] = horarioInicio.split(":").map((v) => parseInt(v, 10));
+  const [h2, m2] = horarioFin.split(":").map((v) => parseInt(v, 10));
+  const startLimitMinutes = (isNaN(h1) ? 0 : h1) * 60 + (isNaN(m1) ? 0 : m1);
+  const endLimitMinutes = (isNaN(h2) ? 0 : h2) * 60 + (isNaN(m2) ? 0 : m2);
+
+  if (parsed.startMinutes < startLimitMinutes || parsed.endMinutes > endLimitMinutes) {
+    return {
+      isWithinRange: false,
+      details: `El horario "${diasHorarios}" excede la franja de uso permitida para este aula (${horarioInicio} a ${horarioFin} hs).`,
+    };
+  }
+
+  return { isWithinRange: true };
+}

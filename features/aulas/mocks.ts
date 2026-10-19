@@ -11,28 +11,40 @@ export const INSTRUMENTOS_DISPONIBLES: string[] = [
   "Mobiliario Infantil / Mesas Grupales",
 ];
 
+/**
+ * El instituto cuenta con exactamente 4 Aulas físicas en su sede central.
+ * Cada una tiene asignada su capacidad física de cupos, inventario didáctico y franja horaria operativa.
+ */
 export const INITIAL_AULAS: Aula[] = [
   {
     id: "aula-1",
     codigo: "AULA-01",
     nombre: "Aula 1 (Planta Baja)",
     ubicacion: "Planta Baja - Sector Este",
-    capacidadMaxima: 18,
+    capacidadMaxima: 16,
+    horarioInicio: "16:00",
+    horarioFin: "21:30",
+    diasPermitidos: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
     instrumentosDidacticos: [
       "Smart TV 55\" / Pantalla Interactiva",
       "Pizarra Blanca Magnética",
       "Biblioteca de Aula / Rincón Lector",
+      "Mobiliario Infantil / Mesas Grupales",
       "Climatización Frío/Calor",
     ],
     estado: "Disponible",
-    observaciones: "Aula adaptada para niveles infantiles y Children, con acceso directo a patio interno.",
+    observaciones:
+      "Aula adaptada especialmente para niveles iniciales (Playgroup, Initial 1-3) y primeros ciclos de Children, con mobiliario ergonómico.",
   },
   {
     id: "aula-2",
     codigo: "AULA-02",
     nombre: "Aula 2 (Laboratorio Multimedia)",
-    ubicacion: "Primer Piso - Ala Tecnológica",
-    capacidadMaxima: 20,
+    ubicacion: "Planta Alta - Ala Tecnológica",
+    capacidadMaxima: 18,
+    horarioInicio: "16:00",
+    horarioFin: "21:30",
+    diasPermitidos: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
     instrumentosDidacticos: [
       "Proyector Full HD",
       "Notebooks / Equipos Multimedia",
@@ -41,14 +53,18 @@ export const INITIAL_AULAS: Aula[] = [
       "Climatización Frío/Calor",
     ],
     estado: "Disponible",
-    observaciones: "Equipada con estaciones de audio para práctica de Listening y exámenes internacionales Anglia/Cambridge.",
+    observaciones:
+      "Equipada con estaciones de audio para práctica de Listening y exámenes internacionales Anglia/Cambridge, cursos de Juniors y Adults.",
   },
   {
     id: "aula-3",
     codigo: "AULA-03",
-    nombre: "Aula 3 (Planta Alta)",
-    ubicacion: "Primer Piso - Sector Central",
+    nombre: "Aula 3 (Planta Alta Central)",
+    ubicacion: "Planta Alta - Sector Central",
     capacidadMaxima: 18,
+    horarioInicio: "16:00",
+    horarioFin: "21:30",
+    diasPermitidos: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
     instrumentosDidacticos: [
       "Smart TV 55\" / Pantalla Interactiva",
       "Biblioteca de Aula / Rincón Lector",
@@ -56,67 +72,27 @@ export const INITIAL_AULAS: Aula[] = [
       "Climatización Frío/Calor",
     ],
     estado: "Disponible",
-    observaciones: "Espacio luminoso para cursos de Juniors y Teens.",
+    observaciones:
+      "Espacio dinámico y luminoso para cursos de Juniors, Children intermedios y comisiones vespertinas de Adults.",
   },
   {
     id: "aula-4",
     codigo: "AULA-04",
-    nombre: "Aula 4 (Teens & Cambridge)",
-    ubicacion: "Primer Piso - Sector Oeste",
-    capacidadMaxima: 18,
+    nombre: "Aula 4 (Avanzados & Exámenes)",
+    ubicacion: "Planta Alta - Sector Oeste",
+    capacidadMaxima: 20,
+    horarioInicio: "16:00",
+    horarioFin: "21:30",
+    diasPermitidos: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
     instrumentosDidacticos: [
       "Smart TV 55\" / Pantalla Interactiva",
-      "Proyector Full HD",
-      "Pizarra Blanca Magnética",
-      "Climatización Frío/Calor",
-    ],
-    estado: "Disponible",
-    observaciones: "Acondicionada para clases dinámicas con recursos digitales y materiales de preparación Cambridge.",
-  },
-  {
-    id: "aula-5",
-    codigo: "AULA-05",
-    nombre: "Aula 5 (Seminarios y Profesorado)",
-    ubicacion: "Primer Piso - Ala Magna",
-    capacidadMaxima: 25,
-    instrumentosDidacticos: [
       "Proyector Full HD",
       "Sistema de Audio Hi-Fi / Parlantes Bluetooth",
       "Pizarra Blanca Magnética",
       "Climatización Frío/Calor",
-      "Biblioteca de Aula / Rincón Lector",
     ],
     estado: "Disponible",
-    observaciones: "Aula de gran porte para cursos terciarios, profesorado y talleres docentes.",
-  },
-  {
-    id: "aula-magna",
-    codigo: "AULA-MAGNA",
-    nombre: "Aula Magna (Auditorio Institucional)",
-    ubicacion: "Planta Baja - Salón Principal",
-    capacidadMaxima: 30,
-    instrumentosDidacticos: [
-      "Proyector Full HD",
-      "Sistema de Audio Hi-Fi / Parlantes Bluetooth",
-      "Smart TV 55\" / Pantalla Interactiva",
-      "Climatización Frío/Calor",
-    ],
-    estado: "Disponible",
-    observaciones: "Espacio multiuso para clases magistrales de Adultos, actos de fin de año y simulacros de examen.",
-  },
-  {
-    id: "aula-kinder",
-    codigo: "SALA-KINDER",
-    nombre: "Sala Blanda / Kinder & Playgroup",
-    ubicacion: "Planta Baja - Sector Inicial",
-    capacidadMaxima: 12,
-    instrumentosDidacticos: [
-      "Mobiliario Infantil / Mesas Grupales",
-      "Smart TV 55\" / Pantalla Interactiva",
-      "Biblioteca de Aula / Rincón Lector",
-      "Climatización Frío/Calor",
-    ],
-    estado: "Disponible",
-    observaciones: "Piso de goma Eva encastrable, mobiliario bajo y materiales didácticos sensoriales en inglés.",
+    observaciones:
+      "Acondicionada para niveles superiores de Adults, cursos de Profesorado, talleres de Conversation y simulación de exámenes internacionales.",
   },
 ];

@@ -16,6 +16,9 @@ export interface Aula {
   nombre: string;
   ubicacion: string;
   capacidadMaxima: number;
+  horarioInicio: string; // Franja horaria de apertura/inicio (ej: "16:00")
+  horarioFin: string; // Franja horaria de cierre/fin (ej: "21:30")
+  diasPermitidos?: string[]; // Días en los que el aula está operativa para clases
   instrumentosDidacticos: string[];
   estado: EstadoAula;
   observaciones?: string;

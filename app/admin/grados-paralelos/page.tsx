@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useGlobalData } from "@/features/core/DataContext";
 import { Comision } from "@/features/comisiones/types";
 import { TurnoType } from "@/features/niveles-turnos/types";
-import { checkScheduleConflict } from "@/features/aulas/scheduleUtils";
+import { checkScheduleConflict, checkWithinAulaOperatingHours } from "@/features/aulas/scheduleUtils";
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -65,6 +65,16 @@ export default function GradosParalelosPage(): React.ReactElement {
     );
   }, [aulaId, diasHorarios, isEditing, selectedComision, comisiones]);
 
+  // Real-time Operating Hours Range Check
+  const rangeCheckResult = useMemo(() => {
+    if (!selectedAulaObj) return { isWithinRange: true };
+    return checkWithinAulaOperatingHours(
+      diasHorarios,
+      selectedAulaObj.horarioInicio,
+      selectedAulaObj.horarioFin
+    );
+  }, [selectedAulaObj, diasHorarios]);
+
   const isExceedingCapacity = useMemo(() => {
     if (!selectedAulaObj) return false;
     return cupoMaximo > selectedAulaObj.capacidadMaxima;
@@ -116,6 +126,11 @@ export default function GradosParalelosPage(): React.ReactElement {
     e.preventDefault();
     if (conflictResult.hasConflict) {
       alert("No se puede guardar la comisión porque existe una superposición de horarios en el aula seleccionada.");
+      return;
+    }
+
+    if (!rangeCheckResult.isWithinRange) {
+      alert(rangeCheckResult.details || "El horario excede la banda permitida para el aula.");
       return;
     }
 
@@ -432,13 +447,12 @@ export default function GradosParalelosPage(): React.ReactElement {
           {/* Ficha rápida del aula seleccionada */}
           {selectedAulaObj && (
             <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-xs space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[#00205B] flex items-center gap-1.5">
-                  <DoorOpen className="w-3.5 h-3.5" />
-                  Atributos de {selectedAulaObj.nombre}:
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-blue-200/60">
                 <span className="font-extrabold text-[#00205B]">
                   Capacidad Física: {selectedAulaObj.capacidadMaxima} alumnos
+                </span>
+                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Habilitada: {selectedAulaObj.horarioInicio || "16:00"} a {selectedAulaObj.horarioFin || "21:30"} hs
                 </span>
               </div>
               <div className="flex flex-wrap gap-1 pt-1">
@@ -463,6 +477,20 @@ export default function GradosParalelosPage(): React.ReactElement {
                 <span className="mt-0.5 block">{conflictResult.conflictDetails}</span>
                 <span className="text-[11px] text-rose-600 font-semibold block mt-1">
                   Modifique los días/horarios o asigne otra aula física para poder guardar.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Detección de Horario Fuera de Rango del Aula */}
+          {!rangeCheckResult.isWithinRange && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5 shadow-2xs animate-in fade-in">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block">Horario Fuera de la Franja del Aula</span>
+                <span className="mt-0.5 block">{rangeCheckResult.details}</span>
+                <span className="text-[11px] text-amber-700 font-semibold block mt-1">
+                  Ajuste el horario dentro de la franja ({selectedAulaObj?.horarioInicio} a {selectedAulaObj?.horarioFin} hs) para poder guardar.
                 </span>
               </div>
             </div>
@@ -512,7 +540,7 @@ export default function GradosParalelosPage(): React.ReactElement {
               type="submit"
               variant="coral"
               size="sm"
-              disabled={conflictResult.hasConflict}
+              disabled={conflictResult.hasConflict || !rangeCheckResult.isWithinRange}
               className="font-bold shadow-xs disabled:opacity-50"
             >
               {isEditing ? "Guardar Modificaciones" : "Crear Comisión"}

@@ -53,6 +53,8 @@ export default function AulasPage(): React.ReactElement {
   const [nombre, setNombre] = useState("");
   const [ubicacion, setUbicacion] = useState("");
   const [capacidadMaxima, setCapacidadMaxima] = useState(18);
+  const [horarioInicio, setHorarioInicio] = useState("16:00");
+  const [horarioFin, setHorarioFin] = useState("21:30");
   const [instrumentos, setInstrumentos] = useState<string[]>([]);
   const [estado, setEstado] = useState<EstadoAula>("Disponible");
   const [observaciones, setObservaciones] = useState("");
@@ -89,8 +91,10 @@ export default function AulasPage(): React.ReactElement {
     setSelectedAula(null);
     setCodigo(`AULA-0${aulas.length + 1}`);
     setNombre("");
-    setUbicacion("Primer Piso - Sector A");
+    setUbicacion("Planta Alta - Sector Central");
     setCapacidadMaxima(18);
+    setHorarioInicio("16:00");
+    setHorarioFin("21:30");
     setInstrumentos([
       "Smart TV 55\" / Pantalla Interactiva",
       "Pizarra Blanca Magnética",
@@ -108,6 +112,8 @@ export default function AulasPage(): React.ReactElement {
     setNombre(item.nombre);
     setUbicacion(item.ubicacion);
     setCapacidadMaxima(item.capacidadMaxima);
+    setHorarioInicio(item.horarioInicio || "16:00");
+    setHorarioFin(item.horarioFin || "21:30");
     setInstrumentos([...item.instrumentosDidacticos]);
     setEstado(item.estado);
     setObservaciones(item.observaciones || "");
@@ -141,6 +147,8 @@ export default function AulasPage(): React.ReactElement {
         nombre,
         ubicacion,
         capacidadMaxima: Number(capacidadMaxima),
+        horarioInicio,
+        horarioFin,
         instrumentosDidacticos: instrumentos,
         estado,
         observaciones,
@@ -152,6 +160,9 @@ export default function AulasPage(): React.ReactElement {
         nombre,
         ubicacion,
         capacidadMaxima: Number(capacidadMaxima),
+        horarioInicio,
+        horarioFin,
+        diasPermitidos: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
         instrumentosDidacticos: instrumentos,
         estado,
         observaciones,
@@ -269,6 +280,16 @@ export default function AulasPage(): React.ReactElement {
           </span>
           <span className="text-[10px] text-slate-400">Cupos físicos</span>
         </div>
+      ),
+    },
+    {
+      id: "horario",
+      header: "Banda Horaria de Uso",
+      cell: (item) => (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-mono font-bold">
+          <Clock className="w-3.5 h-3.5 text-emerald-600" />
+          {item.horarioInicio || "16:00"} - {item.horarioFin || "21:30"} hs
+        </span>
       ),
     },
     {
@@ -488,12 +509,23 @@ export default function AulasPage(): React.ReactElement {
                     <span>{aula.ubicacion}</span>
                   </p>
 
-                  {/* Capacidad */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between mb-3 text-xs">
-                    <span className="text-slate-600 font-medium">Capacidad de Alumnos:</span>
-                    <span className="font-black text-[#00205B] text-sm">
-                      {aula.capacidadMaxima} <span className="text-xs font-normal text-slate-400">cupos máx.</span>
-                    </span>
+                  {/* Capacidad y Rango Horario */}
+                  <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
+                      <span className="text-slate-500 text-[10px] uppercase font-bold">Capacidad Alumnos:</span>
+                      <span className="font-black text-[#00205B] text-sm mt-0.5">
+                        {aula.capacidadMaxima} <span className="text-[10px] font-normal text-slate-400">cupos</span>
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
+                      <span className="text-slate-500 text-[10px] uppercase font-bold flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-emerald-600" />
+                        Franja Horaria:
+                      </span>
+                      <span className="font-bold text-slate-800 text-xs mt-0.5 font-mono">
+                        {aula.horarioInicio || "16:00"} a {aula.horarioFin || "21:30"} hs
+                      </span>
+                    </div>
                   </div>
 
                   {/* Instrumentos Didácticos */}
@@ -725,7 +757,7 @@ export default function AulasPage(): React.ReactElement {
               label="Ubicación Física en el Edificio"
               value={ubicacion}
               onChange={(e) => setUbicacion(e.target.value)}
-              placeholder="ej: Primer Piso - Ala Tecnológica"
+              placeholder="ej: Planta Alta - Sector Central"
               required
             />
             <Input
@@ -735,6 +767,48 @@ export default function AulasPage(): React.ReactElement {
               onChange={(e) => setCapacidadMaxima(Number(e.target.value))}
               required
             />
+          </div>
+
+          {/* Rango Horario de Uso */}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-emerald-600" />
+                <span>Rango Horario Permitido para Clases:</span>
+              </label>
+              <span className="text-[11px] text-slate-500 font-mono">
+                {horarioInicio} a {horarioFin} hs
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Horario de Inicio / Apertura:
+                </label>
+                <input
+                  type="time"
+                  value={horarioInicio}
+                  onChange={(e) => setHorarioInicio(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00205B]"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                  Horario de Cierre / Fin:
+                </label>
+                <input
+                  type="time"
+                  value={horarioFin}
+                  onChange={(e) => setHorarioFin(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00205B]"
+                />
+              </div>
+            </div>
+            <span className="text-[10px] text-slate-400 block">
+              Las comisiones que se asignen a esta aula deberán estar comprendidas dentro de esta franja.
+            </span>
           </div>
 
           {/* Instrumentos didácticos toggle chips */}
@@ -824,6 +898,12 @@ export default function AulasPage(): React.ReactElement {
                 <span className="text-slate-500 font-medium">Capacidad Máxima de Cupos:</span>
                 <span className="font-black text-[#00205B] text-sm">
                   {selectedAula.capacidadMaxima} alumnos
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Franja Horaria Habilitada:</span>
+                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {selectedAula.horarioInicio || "16:00"} a {selectedAula.horarioFin || "21:30"} hs
                 </span>
               </div>
               <div className="flex justify-between">
