@@ -63,17 +63,21 @@ export default function AdmisionesPage(): React.ReactElement {
 
   const [selectedPostulante, setSelectedPostulante] = useState<PostulanteItem | null>(null);
 
-  // Funnel KPIs
-  const totalLeads = postulantes.length;
-  const testPendientes = postulantes.filter((p) => p.estado === "Test Pendiente" || p.estado === "Postulante").length;
-  const enCorreccionCount = postulantes.filter((p) => p.estado === "Test en Corrección").length;
-  const preAlumnosCount = postulantes.filter((p) => p.estado === "Pre-Alumno").length;
-  const activosCount = postulantes.filter((p) => p.estado === "Alumno Activo").length;
+  // Funnel KPIs - Excluimos a los alumnos que ya han sido matriculados (Alumnos Activos)
+  const postulantesEnProceso = postulantes.filter((p) => p.estado !== "Alumno Activo");
+  const totalLeads = postulantesEnProceso.length;
+  const testPendientes = postulantesEnProceso.filter(
+    (p) => p.estado === "Test Pendiente" || p.estado === "Postulante"
+  ).length;
+  const enCorreccionCount = postulantesEnProceso.filter(
+    (p) => p.estado === "Test en Corrección"
+  ).length;
+  const preAlumnosCount = postulantesEnProceso.filter((p) => p.estado === "Pre-Alumno").length;
 
   const filteredPostulantes =
     filterEstado === "TODOS"
-      ? postulantes
-      : postulantes.filter((p) => p.estado === filterEstado);
+      ? postulantesEnProceso
+      : postulantesEnProceso.filter((p) => p.estado === filterEstado);
 
   // Actions handlers
   const handleOpenNewPostulante = () => {
@@ -283,17 +287,17 @@ export default function AdmisionesPage(): React.ReactElement {
         </div>
       </div>
 
-      {/* 5 Funnel KPI Progress Blocks */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      {/* 4 Funnel KPI Progress Blocks (Aspirantes en circuito) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            1. Total Leads
+            1. Total Aspirantes
           </span>
           <span className="text-2xl font-black text-slate-800 mt-1 block">
             {totalLeads}
           </span>
           <span className="text-[10px] text-slate-500 block mt-0.5">
-            Aspirantes registrados
+            Aspirantes en proceso
           </span>
         </div>
 
@@ -328,20 +332,8 @@ export default function AdmisionesPage(): React.ReactElement {
           <span className="text-2xl font-black text-[#00205B] mt-1 block">
             {preAlumnosCount}
           </span>
-          <span className="text-[10px] text-slate-500 block mt-0.5">
-            Listos p/ mostrador
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 shadow-2xs col-span-2 sm:col-span-1">
-          <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
-            5. Alumnos Activos
-          </span>
-          <span className="text-2xl font-black text-emerald-800 mt-1 block">
-            {activosCount}
-          </span>
           <span className="text-[10px] text-emerald-600 block mt-0.5 font-bold">
-            Matriculados en cursos
+            Listos p/ matricular
           </span>
         </div>
       </div>
@@ -358,7 +350,7 @@ export default function AdmisionesPage(): React.ReactElement {
       {/* Main Table with Stage Filters */}
       <DataTable
         title="Padrón de Admisiones y Estado del Test"
-        subtitle="Monitoreo paso a paso del embudo de ingreso de aspirantes"
+        subtitle="Monitoreo paso a paso del embudo de ingreso de aspirantes (los alumnos matriculados pasan a Inscripciones)"
         data={filteredPostulantes}
         columns={columns}
         keyExtractor={(item) => item.id}
@@ -375,7 +367,6 @@ export default function AdmisionesPage(): React.ReactElement {
               "Test Pendiente",
               "Test en Corrección",
               "Pre-Alumno",
-              "Alumno Activo",
             ].map((st) => (
               <button
                 key={st}
