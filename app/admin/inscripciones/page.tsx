@@ -30,9 +30,7 @@ import {
   Info,
   User,
   Receipt,
-  Search,
   Wallet,
-  ArrowRight,
 } from "lucide-react";
 
 // Escala de Aranceles de Matrícula por Mes fijada por la Administración Escolar
@@ -121,37 +119,19 @@ function InscripcionesContent(): React.ReactElement {
       setPostMetodoPago("Efectivo");
       setMontoRecibidoMatricula(0);
       setComprobanteRefMatricula(`CAJA-MATR-${Date.now().toString().slice(-4)}`);
+    } else if (!postulanteIdParam) {
+      setSelectedPostulanteParaMatricula(null);
     }
-  }, [actionParam, targetPostulante?.id, comisiones]);
-
-  // Search state for Pre-Alumnos ready to matriculate (Formato Operatoria de Ventanilla)
-  const [searchPostulanteQuery, setSearchPostulanteQuery] = useState("");
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  }, [actionParam, targetPostulante?.id, postulanteIdParam, comisiones]);
 
   // Pre-alumnos list (aspirantes con test aprobado listos para matricular)
   const preAlumnos = React.useMemo(() => {
     return postulantes.filter((p) => p.estado === "Pre-Alumno");
   }, [postulantes]);
 
-  // Filtered search results
-  const searchResultsPostulantes = React.useMemo(() => {
-    if (!searchPostulanteQuery.trim()) {
-      return preAlumnos;
-    }
-    const q = searchPostulanteQuery.toLowerCase();
-    return preAlumnos.filter(
-      (p) =>
-        p.nombreCompleto.toLowerCase().includes(q) ||
-        p.dni.replace(/\./g, "").includes(q.replace(/\./g, "")) ||
-        (p.resultadoCorreccion?.nivelAsignado || "").toLowerCase().includes(q)
-    );
-  }, [searchPostulanteQuery, preAlumnos]);
-
-  // Handler to select an applicant from the search desk
+  // Handler to select an applicant for matriculation
   const handleSelectPostulante = (post: PostulanteItem) => {
     setSelectedPostulanteParaMatricula(post);
-    setSearchPostulanteQuery("");
-    setIsSearchFocused(false);
 
     // Auto-match commission based on assigned level
     const assignedLevel = post.resultadoCorreccion?.nivelAsignado || "";
@@ -528,7 +508,7 @@ function InscripcionesContent(): React.ReactElement {
               Ventanilla de Cobro Rápido en Secretaría
             </h2>
             <p className="text-xs text-slate-500">
-              Buscador ágil por DNI/Apellido, detección automática de tramos de mora, calculadora de vuelto y recibo no fiscal
+              Matriculación directa de aspirantes con test aprobado, cálculo de arancel según mes fijado, calculadora de vuelto y recibo no fiscal
             </p>
           </div>
 
@@ -545,109 +525,84 @@ function InscripcionesContent(): React.ReactElement {
           </div>
         </div>
 
-        {/* Buscador Universal de Aspirantes Aprobados */}
-        <div className="relative">
-          <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
-            <Search className="w-3.5 h-3.5 text-[#00205B]" />
-            Buscar Alumno por DNI, Apellido o Número de Legajo:
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={searchPostulanteQuery}
-              onChange={(e) => setSearchPostulanteQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              placeholder="Ingrese DNI (ej: 48.912.445) o apellido (ej: Fernández, Castro)..."
-              className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00205B] focus:bg-white transition-all shadow-2xs font-medium"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            {searchPostulanteQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchPostulanteQuery("")}
-                className="absolute right-3.5 top-2.5 text-xs text-slate-400 hover:text-slate-600 font-semibold"
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
-
-          {/* Dropdown de Resultados Ágiles */}
-          {isSearchFocused && (
-            <div className="absolute z-20 left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden divide-y divide-slate-100 max-h-64 overflow-y-auto">
-              {searchResultsPostulantes.length > 0 ? (
-                searchResultsPostulantes.map((post) => (
-                  <button
-                    key={post.id}
-                    type="button"
-                    onMouseDown={() => handleSelectPostulante(post)}
-                    className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between text-xs"
-                  >
-                    <div>
-                      <span className="font-bold text-slate-900 block">{post.nombreCompleto}</span>
-                      <span className="text-[11px] text-slate-500 font-mono">
-                        DNI {post.dni} · {post.franjaEtaria} ({post.edad} años) · Nivel: {post.resultadoCorreccion?.nivelAsignado || "General"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="navy" size="sm">
-                        {post.resultadoCorreccion?.nivelAsignado || "Apto Matrícula"}
-                      </Badge>
-                      <ArrowRight className="w-4 h-4 text-slate-400" />
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="p-4 text-center text-xs text-slate-500">
-                  {preAlumnos.length === 0
-                    ? "No hay aspirantes con test aprobado pendientes de matriculación."
-                    : "No se encontraron aspirantes que coincidan con la búsqueda."}
-                </div>
-              )}
+        {/* Si no hay aspirante seleccionado, mostramos un selector limpio sin menús flotantes trabados */}
+        {!selectedPostulanteParaMatricula ? (
+          <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-[#00205B] flex items-center justify-center font-bold">
+              <GraduationCap className="w-6 h-6" />
             </div>
-          )}
-        </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">
+                Seleccione un Aspirante Aprobado para Iniciar la Matrícula
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Aspirantes con test nivelatorio aprobado habilitados para matricularse ({preAlumnos.length} disponibles)
+              </p>
+            </div>
 
-        {/* Panel del Alumno Seleccionado en Ventanilla (Idéntico a foto image.png) */}
-        {(selectedPostulanteParaMatricula || targetPostulante) && (
-          (() => {
-            const activePostulante = selectedPostulanteParaMatricula || targetPostulante!;
-            return (
-              <div className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/70 space-y-5 animate-in fade-in duration-200">
-                {/* Header del Alumno / Aspirante */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#00205B] flex items-center justify-center font-bold">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-black text-slate-900 text-sm">
-                        {activePostulante.nombreCompleto}
-                      </h3>
-                      <span className="text-xs text-slate-500 font-mono">
-                        DNI {activePostulante.dni} · Postulante Aprobado · {postSelectedComisionObj?.nombre || "Comisión a asignar"} · Nivel: {activePostulante.resultadoCorreccion?.nivelAsignado || "General"}
-                      </span>
-                    </div>
-                  </div>
+            <div className="max-w-xl mx-auto">
+              <select
+                value=""
+                onChange={(e) => {
+                  const found = preAlumnos.find((p) => p.id === e.target.value);
+                  if (found) handleSelectPostulante(found);
+                }}
+                className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#00205B] shadow-2xs text-slate-800 cursor-pointer"
+              >
+                <option value="">
+                  {preAlumnos.length > 0
+                    ? `-- Seleccionar aspirante de la lista (${preAlumnos.length} disponibles) --`
+                    : "-- No hay aspirantes con test aprobado pendientes de matriculación --"}
+                </option>
+                {preAlumnos.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombreCompleto} · DNI {p.dni} · Nivel: {p.resultadoCorreccion?.nivelAsignado || "General"} · {p.franjaEtaria}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300">
-                      <AlertCircle className="w-4 h-4 text-amber-600" />
-                      <span>Estado: Matrícula Inicial Pendiente</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedPostulanteParaMatricula(null);
-                        router.replace("/admin/inscripciones");
-                      }}
-                      className="text-slate-400 hover:text-slate-600"
-                    >
-                      Cambiar
-                    </Button>
-                  </div>
+            <p className="text-[11px] text-slate-400">
+              También puede iniciar la matrícula directamente desde el padrón de <strong>Admisiones</strong> presionando el botón "Matricular" en la fila del aspirante.
+            </p>
+          </div>
+        ) : (
+          /* Panel del Alumno Seleccionado en Ventanilla (Idéntico a foto image.png) */
+          <div className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/70 space-y-5 animate-in fade-in duration-200">
+            {/* Header del Alumno / Aspirante */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#00205B] flex items-center justify-center font-bold">
+                  <User className="w-5 h-5" />
                 </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-sm">
+                    {selectedPostulanteParaMatricula.nombreCompleto}
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    DNI {selectedPostulanteParaMatricula.dni} · Postulante Aprobado · {postSelectedComisionObj?.nombre || "Comisión a asignar"} · Nivel: {selectedPostulanteParaMatricula.resultadoCorreccion?.nivelAsignado || "General"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <span>Estado: Matrícula Inicial Pendiente</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPostulanteParaMatricula(null);
+                    router.replace("/admin/inscripciones");
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  Cambiar
+                </Button>
+              </div>
+            </div>
 
                 {/* Formulario de Matrícula y Cobro */}
                 <form onSubmit={handleConfirmarCobroMatricula} className="space-y-4">
@@ -809,9 +764,7 @@ function InscripcionesContent(): React.ReactElement {
                   </div>
                 </form>
               </div>
-            );
-          })()
-        )}
+            )}
       </div>
 
       <DataTable
