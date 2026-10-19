@@ -36,6 +36,7 @@ import {
   AlertCircle,
   HelpCircle,
   RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/AuthContext";
 import { useGlobalData } from "@/features/core/DataContext";
@@ -91,16 +92,19 @@ export default function AdminLayout({
           title: "Dashboard Principal",
           href: "/admin",
           icon: LayoutDashboard,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
           title: "Datos de Institución",
           href: "/admin/institucion",
           icon: Building,
+          roleRequired: ["Directora"],
         },
         {
           title: "Gestión Educativa (Ciclos)",
           href: "/admin/gestion-educativa",
           icon: CalendarDays,
+          roleRequired: ["Directora"],
         },
       ],
     },
@@ -113,6 +117,7 @@ export default function AdminLayout({
           icon: UserPlus,
           badge: admisionesPendientes > 0 ? `${admisionesPendientes} tests` : undefined,
           badgeVariant: "coral",
+          roleRequired: ["Directora", "Secretaria"],
         },
         {
           title: "Cobranzas & Caja Diaria",
@@ -120,11 +125,13 @@ export default function AdminLayout({
           icon: Wallet,
           badge: vencidasCount > 0 ? `${vencidasCount} mora` : undefined,
           badgeVariant: "coral",
+          roleRequired: ["Directora", "Secretaria"],
         },
         {
           title: "Catálogo Cursos (19 Niveles)",
           href: "/admin/cursos",
           icon: BookOpen,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
       ],
     },
@@ -135,21 +142,25 @@ export default function AdminLayout({
           title: "Niveles y Turnos",
           href: "/admin/niveles-turnos",
           icon: Layers,
+          roleRequired: ["Directora", "Secretaria"],
         },
         {
           title: "Grados / Comisiones",
           href: "/admin/grados-paralelos",
           icon: School,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
           title: "Catálogo de Materias",
           href: "/admin/materias",
           icon: BookMarked,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
           title: "Asignación de Materias",
           href: "/admin/asignacion-materias",
           icon: BookMarked,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
       ],
     },
@@ -160,6 +171,7 @@ export default function AdminLayout({
           title: "Padrón de Estudiantes",
           href: "/admin/estudiantes",
           icon: GraduationCap,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
           title: "Inscripciones y Cupos",
@@ -167,16 +179,19 @@ export default function AdminLayout({
           icon: UserCheck,
           badge: inscripcionesPendientes > 0 ? inscripcionesPendientes : undefined,
           badgeVariant: "warning",
+          roleRequired: ["Directora", "Secretaria"],
         },
         {
           title: "Kardex Estudiantil 360°",
           href: "/admin/kardex",
           icon: Award,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
           title: "Calificaciones y Actas",
           href: "/admin/calificaciones",
           icon: FileSpreadsheet,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
       ],
     },
@@ -187,26 +202,31 @@ export default function AdminLayout({
           title: "Roles de Acceso",
           href: "/admin/roles",
           icon: ShieldCheck,
+          roleRequired: ["Directora"],
         },
         {
           title: "Matriz de Permisos",
           href: "/admin/permisos",
           icon: KeyRound,
+          roleRequired: ["Directora"],
         },
         {
           title: "Cuentas de Usuarios",
           href: "/admin/usuarios",
           icon: Users,
+          roleRequired: ["Directora"],
         },
         {
           title: "Personal Administrativo",
           href: "/admin/personal-admin",
           icon: Briefcase,
+          roleRequired: ["Directora"],
         },
         {
           title: "Personal Docente",
           href: "/admin/personal-docente",
           icon: UserCheck,
+          roleRequired: ["Directora", "Secretaria"],
         },
       ],
     },
@@ -219,10 +239,31 @@ export default function AdminLayout({
           icon: ImageIcon,
           badge: "Directora",
           badgeVariant: "coral",
+          roleRequired: ["Directora"],
         },
       ],
     },
   ];
+
+  // RBAC: Filter visible sections and items for the active role
+  const visibleNavSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => !item.roleRequired || item.roleRequired.includes(currentUser.role)
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  // RBAC: Check if current URL route is authorized for active role
+  const allNavItems = navSections.flatMap((s) => s.items);
+  const matchedItem = allNavItems.find(
+    (item) => item.href === pathname || (item.href !== "/admin" && pathname.startsWith(item.href))
+  );
+  const isCurrentRouteAllowed =
+    !matchedItem ||
+    !matchedItem.roleRequired ||
+    matchedItem.roleRequired.includes(currentUser.role);
 
   const handleRoleChange = (role: UserRole) => {
     setRole(role);
@@ -294,7 +335,7 @@ export default function AdminLayout({
 
         {/* Navigation Items (Scrollable) */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin">
-          {navSections.map((section, sIdx) => (
+          {visibleNavSections.map((section, sIdx) => (
             <div key={sIdx}>
               {!isCollapsed ? (
                 <div className="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
@@ -500,7 +541,57 @@ export default function AdminLayout({
 
         {/* MAIN BODY AREA */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#F8F9FA]">
-          <div className="max-w-7xl mx-auto space-y-6">{children}</div>
+          <div className="max-w-7xl mx-auto space-y-6">
+            {isCurrentRouteAllowed ? (
+              children
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-xs text-center max-w-xl mx-auto my-12 space-y-5">
+                <div className="w-16 h-16 rounded-2xl bg-rose-50 text-[#E63956] flex items-center justify-center mx-auto border border-rose-200 shadow-xs">
+                  <ShieldAlert className="w-8 h-8" />
+                </div>
+                <div className="space-y-1.5">
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                    Acceso Restringido por Rol
+                  </h2>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    La sección <strong className="text-[#00205B]">{matchedItem?.title}</strong> requiere privilegios específicos según la política institucional de EIS Institute.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Tu cargo actual:</span>
+                    <Badge variant="coral" size="sm">
+                      {currentUser.role}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Cargos autorizados:</span>
+                    <div className="flex items-center gap-1">
+                      {matchedItem?.roleRequired?.map((r) => (
+                        <Badge key={r} variant="navy" size="sm">
+                          {r}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-500">
+                  Puedes conmutar de rol desde el selector en la barra superior para simular los accesos y vistas de cada cargo.
+                </p>
+
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => router.push("/admin")}>
+                    Volver al Dashboard
+                  </Button>
+                  <Button variant="coral" size="sm" onClick={() => setRoleModalOpen(true)}>
+                    Cambiar de Rol (Simulación)
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </main>
       </div>
 
