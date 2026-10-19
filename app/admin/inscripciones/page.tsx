@@ -48,6 +48,7 @@ function InscripcionesContent(): React.ReactElement {
   const searchParams = useSearchParams();
   const postulanteIdParam = searchParams.get("postulanteId");
   const actionParam = searchParams.get("action");
+  const inscripcionIdParam = searchParams.get("inscripcionId");
 
   const { currentUser } = useAuth();
   const {
@@ -62,6 +63,8 @@ function InscripcionesContent(): React.ReactElement {
     updateInscripcion,
     deleteInscripcion,
     inscribirPreAlumno,
+    addCobranza,
+    updateEstudiante,
   } = useGlobalData();
 
   // Dialogs & Modals
@@ -90,6 +93,8 @@ function InscripcionesContent(): React.ReactElement {
 
   const [selectedPostulanteParaMatricula, setSelectedPostulanteParaMatricula] =
     useState<PostulanteItem | null>(targetPostulante);
+  const [selectedInscripcionParaAcreditar, setSelectedInscripcionParaAcreditar] =
+    useState<InscripcionItem | null>(null);
   const [postComisionId, setPostComisionId] = useState(comisiones[0]?.id || "");
   const [postMesPago, setPostMesPago] = useState("octubre");
   const [postArancel, setPostArancel] = useState(35000);
@@ -99,39 +104,20 @@ function InscripcionesContent(): React.ReactElement {
   const [reciboModalOpen, setReciboModalOpen] = useState(false);
   const [lastCobranzaEmitida, setLastCobranzaEmitida] = useState<CobranzaItem | null>(null);
 
-  // Auto-open Ventanilla Desk if navigating from Admisiones to matricular an applicant
-  useEffect(() => {
-    if (actionParam === "matricular" && targetPostulante) {
-      setSelectedPostulanteParaMatricula(targetPostulante);
-      // Find matching comision for assigned level if possible
-      const assignedLevel = targetPostulante.resultadoCorreccion?.nivelAsignado || "";
-      const matchingComision = comisiones.find((c) =>
-        c.nombre.toLowerCase().includes(assignedLevel.toLowerCase().slice(0, 6))
-      );
-      if (matchingComision) {
-        setPostComisionId(matchingComision.id);
-      } else if (comisiones[0]) {
-        setPostComisionId(comisiones[0].id);
-      }
-
-      setPostMesPago("octubre");
-      setPostArancel(35000);
-      setPostMetodoPago("Efectivo");
-      setMontoRecibidoMatricula(0);
-      setComprobanteRefMatricula(`CAJA-MATR-${Date.now().toString().slice(-4)}`);
-    } else if (!postulanteIdParam) {
-      setSelectedPostulanteParaMatricula(null);
-    }
-  }, [actionParam, targetPostulante?.id, postulanteIdParam, comisiones]);
-
   // Pre-alumnos list (aspirantes con test aprobado listos para matricular)
   const preAlumnos = React.useMemo(() => {
     return postulantes.filter((p) => p.estado === "Pre-Alumno");
   }, [postulantes]);
 
+  // Alumnos con matrícula 2026 pendiente de cobro (acreditación de deuda)
+  const inscripcionesPendientes = React.useMemo(() => {
+    return inscripciones.filter((i) => i.estado === "Pendiente");
+  }, [inscripciones]);
+
   // Handler to select an applicant for matriculation
   const handleSelectPostulante = (post: PostulanteItem) => {
     setSelectedPostulanteParaMatricula(post);
+    setSelectedInscripcionParaAcreditar(null);
 
     // Auto-match commission based on assigned level
     const assignedLevel = post.resultadoCorreccion?.nivelAsignado || "";
@@ -150,6 +136,43 @@ function InscripcionesContent(): React.ReactElement {
     setMontoRecibidoMatricula(0);
     setComprobanteRefMatricula(`CAJA-MATR-${Date.now().toString().slice(-4)}`);
   };
+
+  // Handler to select an existing student with pending matricula to acredite debt
+  const handleSeleccionarParaAcreditar = (ins: InscripcionItem) => {
+    setSelectedInscripcionParaAcreditar(ins);
+    setSelectedPostulanteParaMatricula(null);
+    setPostComisionId(ins.comisionId || comisiones[0]?.id || "");
+    setPostMesPago("octubre");
+    setPostArancel(ins.arancelMatricula || 35000);
+    setPostMetodoPago(ins.metodoPago === "Tarjeta" ? "Transferencia" : ins.metodoPago);
+    setMontoRecibidoMatricula(0);
+    setComprobanteRefMatricula(`CAJA-MATR-${Date.now().toString().slice(-4)}`);
+
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Auto-open Ventanilla Desk if navigating to matricular or acredite
+  useEffect(() => {
+    if (actionParam === "matricular" && targetPostulante) {
+      handleSelectPostulante(targetPostulante);
+    } else if (actionParam === "acreditar" && inscripcionIdParam) {
+      const foundIns = inscripciones.find((i) => i.id === inscripcionIdParam);
+      if (foundIns) {
+        handleSeleccionarParaAcreditar(foundIns);
+      }
+    } else if (!postulanteIdParam && !inscripcionIdParam) {
+      setSelectedPostulanteParaMatricula(null);
+      setSelectedInscripcionParaAcreditar(null);
+    }
+  }, [actionParam, targetPostulante?.id, postulanteIdParam, inscripcionIdParam, inscripciones]);
+
+  const estudianteAcreditarObj = selectedInscripcionParaAcreditar
+    ? estudiantes.find(
+        (e) => e.id === selectedInscripcionParaAcreditar.estudianteId
+      )
+    : null;
 
   // Handle month selection change for regular form
   const handleMesChange = (mesVal: string) => {
@@ -344,6 +367,104 @@ function InscripcionesContent(): React.ReactElement {
     router.replace("/admin/inscripciones");
   };
 
+  // Acreditar Deuda de Matrícula para Alumnos de Años Anteriores
+  const handleConfirmarAcreditacionDeuda = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedInscripcionParaAcreditar) return;
+
+    if (postMetodoPago === "Transferencia" && !comprobanteRefMatricula.trim()) {
+      alert("Por favor ingrese el número de comprobante o referencia bancaria.");
+      return;
+    }
+
+    if (
+      postMetodoPago === "Efectivo" &&
+      montoRecibidoMatricula > 0 &&
+      montoRecibidoMatricula < postArancel
+    ) {
+      alert("El monto recibido en efectivo es menor al arancel de matrícula a cobrar.");
+      return;
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const reciboNumero = `REC-2026-${String(cobranzas.length + 500).padStart(5, "0")}`;
+    const vuelto =
+      postMetodoPago === "Efectivo"
+        ? Math.max(0, montoRecibidoMatricula - postArancel)
+        : 0;
+    const comisionObj = comisiones.find((c) => c.id === postComisionId);
+    const cajeroStr = `${currentUser.name} (${currentUser.role})`;
+    const estObj = estudiantes.find(
+      (e) => e.id === selectedInscripcionParaAcreditar.estudianteId
+    );
+
+    // 1. Actualizar la Inscripción a estado Confirmada
+    const inscripcionActualizada: InscripcionItem = {
+      ...selectedInscripcionParaAcreditar,
+      estado: "Confirmada",
+      comisionId: postComisionId,
+      comisionNombre: comisionObj?.nombre || selectedInscripcionParaAcreditar.comisionNombre,
+      arancelMatricula: postArancel,
+      metodoPago: postMetodoPago,
+      fechaMatriculacion: todayStr,
+      observaciones: `Deuda de matrícula acreditada en secretaría el ${todayStr} vía ${postMetodoPago}. Sin mora.`,
+    };
+    updateInscripcion(inscripcionActualizada);
+
+    // 2. Si el alumno tenía saldo pendiente en su legajo, descontar el arancel abonado
+    if (estObj) {
+      updateEstudiante({
+        ...estObj,
+        saldoPendiente: Math.max(0, estObj.saldoPendiente - postArancel),
+        estado: estObj.estado === "Condicional" ? "Regular" : estObj.estado,
+      });
+    }
+
+    // 3. Emitir el registro oficial de Cobranza para el Recibo No Fiscal
+    const cobranzaEmitida: CobranzaItem = {
+      id: `cob-${Date.now()}`,
+      reciboNumero,
+      estudianteId: selectedInscripcionParaAcreditar.estudianteId,
+      estudianteNombre: selectedInscripcionParaAcreditar.estudianteNombre,
+      estudianteDni: selectedInscripcionParaAcreditar.estudianteDni,
+      legajoNumero: estObj?.legajoNumero || "LEG-REGULAR",
+      cursoNombre: comisionObj?.nombre || selectedInscripcionParaAcreditar.comisionNombre,
+      concepto: `Matrícula Ciclo Lectivo 2026 (Acreditación de Deuda)`,
+      mesPeriodo: `Matrícula ${postMesPago.charAt(0).toUpperCase() + postMesPago.slice(1)} 2026`,
+      montoBaseEfectivo: postArancel,
+      montoBaseTransferencia: Math.round(postArancel * 1.1),
+      montoBase: postArancel,
+      tramoFecha: "tramo_1_10",
+      porcentajeRecargo: 0,
+      recargoMora: 0,
+      totalAPagar: postArancel,
+      fechaVencimiento: todayStr,
+      fechaPago: todayStr,
+      metodoPago: postMetodoPago,
+      cajeroResponsable: cajeroStr,
+      estado: "Pagado",
+      comprobanteReferencia:
+        comprobanteRefMatricula ||
+        `${postMetodoPago === "Efectivo" ? "CAJA-MATR" : "TRF-ONLINE"}-${Date.now().toString().slice(-4)}`,
+      observaciones: `Acreditación de deuda de matrícula del año concurrente 2026. Alumno regular de años anteriores.`,
+      montoRecibido:
+        postMetodoPago === "Efectivo"
+          ? montoRecibidoMatricula || postArancel
+          : postArancel,
+      vueltoEntregado: vuelto,
+    };
+    addCobranza(cobranzaEmitida);
+
+    setLastCobranzaEmitida(cobranzaEmitida);
+    setReciboModalOpen(true);
+    setSelectedInscripcionParaAcreditar(null);
+    setSuccessNotification(
+      `¡Deuda de matrícula acreditada con éxito! La matrícula de ${selectedInscripcionParaAcreditar.estudianteNombre} ha sido Confirmada y se emitió el recibo correspondiente.`
+    );
+
+    router.replace("/admin/inscripciones");
+  };
+
   const handleConfirmDelete = () => {
     if (selectedIns) {
       deleteInscripcion(selectedIns.id);
@@ -461,18 +582,31 @@ function InscripcionesContent(): React.ReactElement {
       id: "estado",
       header: "Estado",
       cell: (item) => (
-        <Badge
-          variant={
-            item.estado === "Confirmada"
-              ? "success"
-              : item.estado === "Pendiente"
-              ? "warning"
-              : "danger"
-          }
-          size="sm"
-        >
-          {item.estado}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={
+              item.estado === "Confirmada"
+                ? "success"
+                : item.estado === "Pendiente"
+                ? "warning"
+                : "danger"
+            }
+            size="sm"
+          >
+            {item.estado}
+          </Badge>
+          {item.estado === "Pendiente" && (
+            <Button
+              size="sm"
+              variant="coral"
+              onClick={() => handleSeleccionarParaAcreditar(item)}
+              className="font-bold whitespace-nowrap shadow-xs text-[11px]"
+              icon={<Receipt className="w-3.5 h-3.5" />}
+            >
+              Acreditar Pago
+            </Button>
+          )}
+        </div>
       ),
     },
   ];
@@ -508,7 +642,7 @@ function InscripcionesContent(): React.ReactElement {
               Ventanilla de Cobro Rápido en Secretaría
             </h2>
             <p className="text-xs text-slate-500">
-              Matriculación directa de aspirantes con test aprobado, cálculo de arancel según mes fijado, calculadora de vuelto y recibo no fiscal
+              Matriculación directa de aspirantes y acreditación de deuda de matrícula para alumnos regulares de años anteriores
             </p>
           </div>
 
@@ -525,45 +659,83 @@ function InscripcionesContent(): React.ReactElement {
           </div>
         </div>
 
-        {/* Si no hay aspirante seleccionado, mostramos un selector limpio sin menús flotantes trabados */}
-        {!selectedPostulanteParaMatricula ? (
+        {/* Si no hay aspirante ni alumno seleccionado, mostramos un selector limpio sin menús flotantes trabados */}
+        {!selectedPostulanteParaMatricula && !selectedInscripcionParaAcreditar ? (
           <div className="p-6 bg-slate-50/80 rounded-2xl border border-slate-200 text-center space-y-4">
             <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-50 text-[#00205B] flex items-center justify-center font-bold">
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-800">
-                Seleccione un Aspirante Aprobado para Iniciar la Matrícula
+                Seleccione un Alumno o Aspirante para Cobrar o Acreditar su Matrícula
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Aspirantes con test nivelatorio aprobado habilitados para matricularse ({preAlumnos.length} disponibles)
+                Alumnos regulares con matrícula pendiente ({inscripcionesPendientes.length}) y aspirantes nuevos habilitados ({preAlumnos.length})
               </p>
             </div>
+
+            {inscripcionesPendientes.length > 0 && (
+              <div className="max-w-xl mx-auto p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs text-amber-900 text-left">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>
+                    Hay <strong>{inscripcionesPendientes.length} matrícula(s) 2026 pendiente(s) de pago</strong>.
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="coral"
+                  onClick={() => handleSeleccionarParaAcreditar(inscripcionesPendientes[0])}
+                  className="font-bold shrink-0 ml-2 shadow-xs"
+                >
+                  Acreditar {inscripcionesPendientes[0].estudianteNombre.split(" ")[0]}
+                </Button>
+              </div>
+            )}
 
             <div className="max-w-xl mx-auto">
               <select
                 value=""
                 onChange={(e) => {
-                  const found = preAlumnos.find((p) => p.id === e.target.value);
-                  if (found) handleSelectPostulante(found);
+                  const val = e.target.value;
+                  if (val.startsWith("post:")) {
+                    const pId = val.replace("post:", "");
+                    const found = preAlumnos.find((p) => p.id === pId);
+                    if (found) handleSelectPostulante(found);
+                  } else if (val.startsWith("ins:")) {
+                    const insId = val.replace("ins:", "");
+                    const found = inscripciones.find((i) => i.id === insId);
+                    if (found) handleSeleccionarParaAcreditar(found);
+                  }
                 }}
                 className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#00205B] shadow-2xs text-slate-800 cursor-pointer"
               >
                 <option value="">
-                  {preAlumnos.length > 0
-                    ? `-- Seleccionar aspirante de la lista (${preAlumnos.length} disponibles) --`
-                    : "-- No hay aspirantes con test aprobado pendientes de matriculación --"}
+                  -- Seleccionar de la lista de cobranza en ventanilla --
                 </option>
-                {preAlumnos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombreCompleto} · DNI {p.dni} · Nivel: {p.resultadoCorreccion?.nivelAsignado || "General"} · {p.franjaEtaria}
-                  </option>
-                ))}
+
+                {inscripcionesPendientes.length > 0 && (
+                  <optgroup label="⚠️ Alumnos de Años Anteriores · Matrícula 2026 Pendiente de Pago">
+                    {inscripcionesPendientes.map((ins) => (
+                      <option key={ins.id} value={`ins:${ins.id}`}>
+                        {ins.estudianteNombre} (DNI {ins.estudianteDni}) · Matrícula: {ins.numeroMatricula} · {ins.comisionNombre} · Deuda: {formatCurrency(ins.arancelMatricula)}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+
+                <optgroup label={`🎓 Aspirantes Nuevos · Test Nivelatorio Aprobado (${preAlumnos.length})`}>
+                  {preAlumnos.map((p) => (
+                    <option key={p.id} value={`post:${p.id}`}>
+                      {p.nombreCompleto} · DNI {p.dni} · Nivel: {p.resultadoCorreccion?.nivelAsignado || "General"} · {p.franjaEtaria}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
             <p className="text-[11px] text-slate-400">
-              También puede iniciar la matrícula directamente desde el padrón de <strong>Admisiones</strong> presionando el botón "Matricular" en la fila del aspirante.
+              Tip: También puede presionar el botón <strong>"Acreditar Pago"</strong> directamente en la fila del alumno en el libro de matrículas inferior.
             </p>
           </div>
         ) : (
@@ -577,10 +749,20 @@ function InscripcionesContent(): React.ReactElement {
                 </div>
                 <div>
                   <h3 className="font-black text-slate-900 text-sm">
-                    {selectedPostulanteParaMatricula.nombreCompleto}
+                    {selectedInscripcionParaAcreditar
+                      ? selectedInscripcionParaAcreditar.estudianteNombre
+                      : selectedPostulanteParaMatricula?.nombreCompleto}
                   </h3>
                   <span className="text-xs text-slate-500 font-mono">
-                    DNI {selectedPostulanteParaMatricula.dni} · Postulante Aprobado · {postSelectedComisionObj?.nombre || "Comisión a asignar"} · Nivel: {selectedPostulanteParaMatricula.resultadoCorreccion?.nivelAsignado || "General"}
+                    {selectedInscripcionParaAcreditar ? (
+                      <>
+                        DNI {selectedInscripcionParaAcreditar.estudianteDni} · Legajo: {estudianteAcreditarObj?.legajoNumero || "LEG-REGULAR"} · {selectedInscripcionParaAcreditar.comisionNombre} · Matrícula {selectedInscripcionParaAcreditar.numeroMatricula}
+                      </>
+                    ) : (
+                      <>
+                        DNI {selectedPostulanteParaMatricula?.dni} · Postulante Aprobado · {postSelectedComisionObj?.nombre || "Comisión a asignar"} · Nivel: {selectedPostulanteParaMatricula?.resultadoCorreccion?.nivelAsignado || "General"}
+                      </>
+                    )}
                   </span>
                 </div>
               </div>
@@ -588,13 +770,23 @@ function InscripcionesContent(): React.ReactElement {
               <div className="flex items-center gap-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300">
                   <AlertCircle className="w-4 h-4 text-amber-600" />
-                  <span>Estado: Matrícula Inicial Pendiente</span>
+                  <span>
+                    {selectedInscripcionParaAcreditar
+                      ? "Estado: Matrícula 2026 Pendiente de Pago"
+                      : "Estado: Matrícula Inicial Pendiente"}
+                  </span>
                 </div>
+                {selectedInscripcionParaAcreditar && (
+                  <Badge variant="navy" size="sm">
+                    Alumno de Años Anteriores
+                  </Badge>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSelectedPostulanteParaMatricula(null);
+                    setSelectedInscripcionParaAcreditar(null);
                     router.replace("/admin/inscripciones");
                   }}
                   className="text-slate-400 hover:text-slate-600"
@@ -604,8 +796,15 @@ function InscripcionesContent(): React.ReactElement {
               </div>
             </div>
 
-                {/* Formulario de Matrícula y Cobro */}
-                <form onSubmit={handleConfirmarCobroMatricula} className="space-y-4">
+            {/* Formulario de Matrícula y Cobro */}
+            <form
+              onSubmit={
+                selectedInscripcionParaAcreditar
+                  ? handleConfirmarAcreditacionDeuda
+                  : handleConfirmarCobroMatricula
+              }
+              className="space-y-4"
+            >
                   {/* Asignación de Comisión y Mes de Matrícula */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
                     <div>
@@ -661,7 +860,9 @@ function InscripcionesContent(): React.ReactElement {
                         Matrícula Ciclo Lectivo 2026
                       </span>
                       <span className="text-[11px] text-slate-500 block mt-0.5">
-                        Vigencia: Ciclo Lectivo 2026
+                        {selectedInscripcionParaAcreditar
+                          ? `Acreditación de Deuda Pendiente (${selectedInscripcionParaAcreditar.numeroMatricula})`
+                          : "Alta de Matrícula Oficial Inicial"}
                       </span>
                     </div>
 
@@ -683,6 +884,11 @@ function InscripcionesContent(): React.ReactElement {
                       </span>
                       <span className="text-2xl font-black tracking-tight">
                         {formatCurrency(postArancel)}
+                      </span>
+                      <span className="text-[10px] text-slate-300">
+                        {selectedInscripcionParaAcreditar
+                          ? "Cancelación total de matrícula adeudada"
+                          : "Arancel regular oficial"}
                       </span>
                     </div>
                   </div>
@@ -759,7 +965,9 @@ function InscripcionesContent(): React.ReactElement {
                       className="font-bold shadow-md shadow-[#E63956]/20"
                       icon={<Receipt className="w-4 h-4" />}
                     >
-                      Cobrar {formatCurrency(postArancel)} y Emitir Recibo
+                      {selectedInscripcionParaAcreditar
+                        ? `Acreditar Deuda de ${formatCurrency(postArancel)} y Emitir Recibo`
+                        : `Cobrar ${formatCurrency(postArancel)} y Emitir Recibo`}
                     </Button>
                   </div>
                 </form>
@@ -983,7 +1191,21 @@ function InscripcionesContent(): React.ReactElement {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
+            <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+              {selectedIns.estado === "Pendiente" && (
+                <Button
+                  variant="coral"
+                  size="sm"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    handleSeleccionarParaAcreditar(selectedIns);
+                  }}
+                  icon={<Receipt className="w-3.5 h-3.5" />}
+                  className="font-bold shadow-xs"
+                >
+                  Acreditar Deuda en Ventanilla
+                </Button>
+              )}
               <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
                 Cerrar
               </Button>
