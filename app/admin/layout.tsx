@@ -174,7 +174,7 @@ export default function AdminLayout({
           roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
-          title: "Inscripciones y Cupos",
+          title: "Matriculaciones",
           href: "/admin/inscripciones",
           icon: UserCheck,
           badge: inscripcionesPendientes > 0 ? inscripcionesPendientes : undefined,
@@ -757,7 +757,7 @@ export default function AdminLayout({
                   onClick={() => setNotificationsOpen(false)}
                   className="inline-block mt-2 text-xs font-bold text-amber-800 underline"
                 >
-                  Ver Inscripciones →
+                  Ver Matriculaciones →
                 </Link>
               </div>
             </div>

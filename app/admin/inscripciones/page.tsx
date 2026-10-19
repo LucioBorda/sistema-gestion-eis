@@ -492,7 +492,7 @@ function InscripcionesContent(): React.ReactElement {
 
   const handleExportPdf = () => {
     const htmlBody = `
-      <p style="font-size: 13px;">Libro de Matrículas e Inscripciones Oficiales - EIS Institute:</p>
+      <p style="font-size: 13px;">Libro Oficial de Matriculaciones - EIS Institute:</p>
       <table>
         <thead>
           <tr>
@@ -976,7 +976,7 @@ function InscripcionesContent(): React.ReactElement {
       </div>
 
       <DataTable
-        title="Libro de Inscripciones y Matriculaciones"
+        title="Libro Oficial de Matriculaciones"
         subtitle="Control de altas de matrícula por ciclo lectivo con esquema de aranceles escalonados según mes fijado por la administración (sin recargos por mora)"
         data={inscripciones}
         columns={columns}

@@ -350,7 +350,7 @@ export default function AdmisionesPage(): React.ReactElement {
       {/* Main Table with Stage Filters */}
       <DataTable
         title="Padrón de Admisiones y Estado del Test"
-        subtitle="Monitoreo paso a paso del embudo de ingreso de aspirantes (los alumnos matriculados pasan a Inscripciones)"
+        subtitle="Monitoreo paso a paso del embudo de ingreso de aspirantes (los alumnos matriculados pasan a Matriculaciones)"
         data={filteredPostulantes}
         columns={columns}
         keyExtractor={(item) => item.id}
