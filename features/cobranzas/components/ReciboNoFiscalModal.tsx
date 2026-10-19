@@ -34,7 +34,7 @@ export const ReciboNoFiscalModal: React.FC<ReciboNoFiscalModalProps> = ({
       onClose={onClose}
       title="Recibo Oficial de Cobranza (No Fiscal)"
       subtitle="Comprobante reglamentario de ventanilla para el alumno y archivo institucional"
-      maxWidth="md"
+      maxWidth="lg"
     >
       <div className="space-y-4">
         {/* Printable Card Area */}
@@ -196,12 +196,17 @@ export const ReciboNoFiscalModal: React.FC<ReciboNoFiscalModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-          <Button variant="secondary" size="sm" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            className="w-full sm:w-auto justify-center"
+          >
             Cerrar
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto justify-end">
             {onNotifyWhatsApp && (
               <button
                 type="button"
@@ -209,7 +214,7 @@ export const ReciboNoFiscalModal: React.FC<ReciboNoFiscalModalProps> = ({
                   onClose();
                   onNotifyWhatsApp(cobranza);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                 title="Enviar comprobante por WhatsApp al alumno o familia"
               >
                 <MessageCircle className="w-4 h-4 text-emerald-600" />
@@ -222,6 +227,7 @@ export const ReciboNoFiscalModal: React.FC<ReciboNoFiscalModalProps> = ({
               size="sm"
               onClick={handlePrint}
               icon={<Printer className="w-4 h-4" />}
+              className="w-full sm:w-auto justify-center"
             >
               Imprimir Recibo (Ctrl + P)
             </Button>

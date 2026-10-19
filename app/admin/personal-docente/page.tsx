@@ -275,7 +275,7 @@ export default function PersonalDocentePage(): React.ReactElement {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={isEditing ? "Editar Docente" : "Nuevo Registro Docente"}
-        maxWidth="lg"
+        maxWidth="xl"
       >
         <form onSubmit={handleSave} className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
@@ -351,16 +351,22 @@ export default function PersonalDocentePage(): React.ReactElement {
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
               {isEditing ? "Guardar Modificaciones" : "Registrar Docente"}
             </Button>
           </div>
@@ -372,7 +378,7 @@ export default function PersonalDocentePage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={selectedDocente?.nombreCompleto || "Ficha del Docente"}
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedDocente && (
           <div className="space-y-3 py-2 text-xs">
@@ -423,8 +429,13 @@ export default function PersonalDocentePage(): React.ReactElement {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar
               </Button>
             </div>

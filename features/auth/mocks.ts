@@ -2,11 +2,20 @@ import { CurrentUser, ActiveSession, RolePreset } from "./types";
 
 export const ROLE_PRESETS: RolePreset[] = [
   {
+    role: "Administrador",
+    title: "Administrador General / Manager",
+    name: "Ing. Martín Almada",
+    email: "admin.ti@culturalensenada.edu.ar",
+    description: "Acceso total y sin restricciones: seguridad, roles de acceso, matriz de permisos, usuarios y toda la plataforma",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    badgeColor: "navy",
+  },
+  {
     role: "Directora",
-    title: "Directora General / Administradora",
+    title: "Directora General / Rectora",
     name: "Lic. Patricia Valenzuela",
     email: "direccion@culturalensenada.edu.ar",
-    description: "Acceso total institucional, financiero, roles, materias y Gestor de Landing",
+    description: "Supervisión institucional, académica, tesorería, cobranzas, personal y gestión escolar",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
     badgeColor: "coral",
   },

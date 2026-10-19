@@ -155,19 +155,26 @@ export const BandejaCorreccionDirectoraModal: React.FC<BandejaCorreccionDirector
           </div>
         </div>
 
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <span className="text-[11px] text-slate-500">
             Al confirmar, el alumno pasa automáticamente a <strong>&quot;Pre-Alumno&quot;</strong>, listo para inscripción en mostrador.
           </span>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={onClose}>
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={onClose}
+              className="w-full sm:w-auto justify-center"
+            >
               Cancelar
             </Button>
             <Button
               type="submit"
               variant="coral"
-              size="sm"
+              size="md"
               icon={<CheckCircle2 className="w-4 h-4" />}
+              className="w-full sm:w-auto justify-center font-bold"
             >
               Confirmar Dictamen de Nivel
             </Button>

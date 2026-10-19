@@ -227,15 +227,23 @@ export const TestOficialPrintModal: React.FC<TestOficialPrintModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-2">
-          <Button variant="secondary" size="sm" onClick={onClose}>
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-slate-100">
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={onClose}
+            className="w-full sm:w-auto justify-center"
+          >
             Cerrar
           </Button>
           <Button
+            type="button"
             variant="coral"
-            size="sm"
+            size="md"
             onClick={handlePrint}
             icon={<Printer className="w-4 h-4" />}
+            className="w-full sm:w-auto justify-center font-bold"
           >
             Imprimir Examen Oficial (Ctrl + P)
           </Button>

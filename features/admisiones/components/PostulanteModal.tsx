@@ -19,7 +19,8 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [nombreCompleto, setNombreCompleto] = useState("");
+  const [nombres, setNombres] = useState("");
+  const [apellidos, setApellidos] = useState("");
   const [dni, setDni] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -44,10 +45,12 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent, imprimir: boolean = false) => {
     e.preventDefault();
-    if (!nombreCompleto || !dni) {
-      alert("Por favor ingrese nombre completo y DNI del postulante.");
+    if (!nombres.trim() || !apellidos.trim() || !dni.trim()) {
+      alert("Por favor complete nombre(s), apellido(s) y DNI del aspirante.");
       return;
     }
+
+    const nombreCompleto = `${nombres.trim()} ${apellidos.trim()}`;
 
     const newPostulante: PostulanteItem = {
       id: `pos-${Date.now()}`,
@@ -70,7 +73,8 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
   };
 
   const handleReset = () => {
-    setNombreCompleto("");
+    setNombres("");
+    setApellidos("");
     setDni("");
     setTelefono("");
     setEmail("");
@@ -87,16 +91,23 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
       onClose={handleReset}
       title="Precarga de Postulante / Lead"
       subtitle="Registro del aspirante para el circuito del Test Nivelatorio Oficial"
-      maxWidth="xl"
+      maxWidth="2xl"
     >
       <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-5 py-2">
-        {/* Fila 1: Nombre Completo y DNI */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Fila 1: Nombres, Apellidos y DNI */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <Input
-            label="Nombre Completo del Aspirante"
-            value={nombreCompleto}
-            onChange={(e) => setNombreCompleto(e.target.value)}
-            placeholder="ej: Mateo Ignacio Fernández"
+            label="Nombre(s) del Aspirante"
+            value={nombres}
+            onChange={(e) => setNombres(e.target.value)}
+            placeholder="ej: Mateo Ignacio"
+            required
+          />
+          <Input
+            label="Apellido(s) del Aspirante"
+            value={apellidos}
+            onChange={(e) => setApellidos(e.target.value)}
+            placeholder="ej: Fernández Gómez"
             required
           />
           <Input
@@ -238,12 +249,18 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-          <Button variant="secondary" size="md" onClick={handleReset}>
+        <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={handleReset}
+            className="w-full sm:w-auto justify-center"
+          >
             Cancelar
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
             {modalidadRinde === "En el momento" && (
               <Button
                 type="button"
@@ -251,6 +268,7 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
                 size="md"
                 onClick={(e) => handleSubmit(e, true)}
                 icon={<Printer className="w-4 h-4 text-[#00205B]" />}
+                className="w-full sm:w-auto justify-center font-medium"
               >
                 Guardar e Imprimir Test
               </Button>
@@ -259,7 +277,7 @@ export const PostulanteModal: React.FC<PostulanteModalProps> = ({
               type="submit"
               variant="coral"
               size="md"
-              className="font-bold shadow-md shadow-[#E63956]/20"
+              className="font-bold shadow-md shadow-[#E63956]/20 w-full sm:w-auto justify-center"
               icon={<CheckCircle2 className="w-4 h-4" />}
             >
               Registrar Postulante

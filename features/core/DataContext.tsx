@@ -163,12 +163,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [ciclosLectivos, setCiclosLectivos] = useState<CicloLectivo[]>(() =>
     loadFromStorage("ciclos", INITIAL_CICLOS_LECTIVOS)
   );
-  const [nivelesTurnos, setNivelesTurnos] = useState<NivelTurno[]>(() =>
-    loadFromStorage("niveles", INITIAL_NIVELES_TURNOS)
-  );
+  const [nivelesTurnos, setNivelesTurnos] = useState<NivelTurno[]>(() => {
+    const loaded = loadFromStorage<NivelTurno[]>("niveles", INITIAL_NIVELES_TURNOS);
+    if (!Array.isArray(loaded) || loaded.length <= 6 || loaded.some((n) => n.id === "niv-2" || n.nombre.includes("Children Levels"))) {
+      return INITIAL_NIVELES_TURNOS;
+    }
+    return loaded;
+  });
   const [comisiones, setComisiones] = useState<Comision[]>(() => {
     const loaded = loadFromStorage<Comision[]>("comisiones", INITIAL_COMISIONES);
-    if (!Array.isArray(loaded) || loaded.some((c) => c.aulaId === "aula-magna" || c.aulaId === "aula-5" || c.aulaId === "aula-kinder")) {
+    if (!Array.isArray(loaded) || loaded.some((c) => c.aulaId === "aula-magna" || c.aulaId === "aula-5" || c.aulaId === "aula-kinder" || c.nivelId === "niv-3" || c.nivelId === "niv-2")) {
       return INITIAL_COMISIONES;
     }
     return loaded;
@@ -180,9 +184,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return loaded;
   });
-  const [materias, setMaterias] = useState<Materia[]>(() =>
-    loadFromStorage("materias", INITIAL_MATERIAS)
-  );
+  const [materias, setMaterias] = useState<Materia[]>(() => {
+    const loaded = loadFromStorage<Materia[]>("materias", INITIAL_MATERIAS);
+    if (!Array.isArray(loaded) || loaded.some((m) => m.nivelId === "niv-3" || m.nivelId === "niv-5")) {
+      return INITIAL_MATERIAS;
+    }
+    return loaded;
+  });
   const [roles, setRoles] = useState<RoleItem[]>(() =>
     loadFromStorage("roles", INITIAL_ROLES)
   );

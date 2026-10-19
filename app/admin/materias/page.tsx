@@ -26,7 +26,7 @@ export default function MateriasPage(): React.ReactElement {
   // Form State
   const [codigo, setCodigo] = useState("");
   const [nombre, setNombre] = useState("");
-  const [nivelId, setNivelId] = useState(nivelesTurnos[0]?.id || "niv-3");
+  const [nivelId, setNivelId] = useState(nivelesTurnos[0]?.id || "niv-jun1");
   const [cargaHorariaSemanal, setCargaHorariaSemanal] = useState(3);
   const [tipo, setTipo] = useState<Materia["tipo"]>("Troncal");
   const [regimen, setRegimen] = useState<Materia["regimen"]>("Anual");
@@ -38,7 +38,7 @@ export default function MateriasPage(): React.ReactElement {
     setSelectedMateria(null);
     setCodigo(`MAT-${Date.now().toString().slice(-4)}`);
     setNombre("");
-    setNivelId(nivelesTurnos[0]?.id || "niv-3");
+    setNivelId(nivelesTurnos[0]?.id || "niv-jun1");
     setCargaHorariaSemanal(3);
     setTipo("Troncal");
     setRegimen("Anual");
@@ -338,16 +338,22 @@ export default function MateriasPage(): React.ReactElement {
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
               {isEditing ? "Guardar Modificaciones" : "Registrar Materia"}
             </Button>
           </div>
@@ -359,7 +365,7 @@ export default function MateriasPage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={selectedMateria?.nombre || "Detalle de Materia"}
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedMateria && (
           <div className="space-y-3 py-2 text-xs">
@@ -397,8 +403,13 @@ export default function MateriasPage(): React.ReactElement {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar
               </Button>
             </div>

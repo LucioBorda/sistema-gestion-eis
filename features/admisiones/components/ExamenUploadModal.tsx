@@ -80,7 +80,7 @@ export const ExamenUploadModal: React.FC<ExamenUploadModalProps> = ({
       onClose={handleReset}
       title="Carga y Digitalización del Examen Rendido"
       subtitle={`Subir examen físico escaneado para ${postulante.nombreCompleto} (DNI ${postulante.dni})`}
-      maxWidth="md"
+      maxWidth="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 py-2 text-xs">
         <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 flex items-start gap-2">
@@ -177,15 +177,22 @@ export const ExamenUploadModal: React.FC<ExamenUploadModalProps> = ({
           </div>
         </div>
 
-        <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-          <Button variant="secondary" size="sm" onClick={handleReset}>
+        <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={handleReset}
+            className="w-full sm:w-auto justify-center"
+          >
             Cancelar
           </Button>
           <Button
             type="submit"
             variant="coral"
-            size="sm"
+            size="md"
             icon={<CheckCircle2 className="w-4 h-4" />}
+            className="w-full sm:w-auto justify-center font-bold"
           >
             Digitalizar y Enviar a Corrección
           </Button>

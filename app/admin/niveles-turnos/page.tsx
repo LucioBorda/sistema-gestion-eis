@@ -119,7 +119,7 @@ export default function NivelesTurnosPage(): React.ReactElement {
 
   const handleExportExcel = () => {
     exportToExcelCSV(
-      "niveles_turnos_eis",
+      "niveles_eis",
       [
         { header: "Código", accessor: "codigo" },
         { header: "Nivel Académico", accessor: "nombre" },
@@ -135,7 +135,7 @@ export default function NivelesTurnosPage(): React.ReactElement {
 
   const handleExportPdf = () => {
     const htmlBody = `
-      <p style="font-size: 13px;">Estructura Académica Oficial por Niveles y Turnos - EIS Institute:</p>
+      <p style="font-size: 13px;">Estructura Académica Oficial por Niveles - EIS Institute:</p>
       <table>
         <thead>
           <tr>
@@ -163,7 +163,7 @@ export default function NivelesTurnosPage(): React.ReactElement {
         </tbody>
       </table>
     `;
-    openInstitutionalPrintPreview("Catálogo de Niveles y Turnos", htmlBody);
+    openInstitutionalPrintPreview("Catálogo de Niveles Académicos", htmlBody);
   };
 
   const columns: ColumnDef<NivelTurno>[] = [
@@ -231,8 +231,8 @@ export default function NivelesTurnosPage(): React.ReactElement {
   return (
     <div className="space-y-6">
       <DataTable
-        title="Niveles Educativos y Turnos"
-        subtitle="Estructura pedagógica desde Playgroup hasta Formación Docente y Convenios UTN"
+        title="Niveles"
+        subtitle="Estructura curricular con los 19 niveles oficiales individuales de EIS Institute"
         data={nivelesTurnos}
         columns={columns}
         keyExtractor={(item) => item.id}
@@ -243,7 +243,7 @@ export default function NivelesTurnosPage(): React.ReactElement {
         onView={handleOpenDetail}
         onEdit={handleOpenEdit}
         onDelete={handleOpenDelete}
-        initialPageSize={8}
+        initialPageSize={10}
       />
 
       {/* MODAL: FORMULARIO */}
@@ -337,16 +337,22 @@ export default function NivelesTurnosPage(): React.ReactElement {
             </label>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
               {isEditing ? "Guardar Modificaciones" : "Crear Nivel"}
             </Button>
           </div>
@@ -358,7 +364,7 @@ export default function NivelesTurnosPage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={selectedNivel?.nombre || "Ficha del Nivel"}
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedNivel && (
           <div className="space-y-3 py-2 text-xs">
@@ -403,8 +409,13 @@ export default function NivelesTurnosPage(): React.ReactElement {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar
               </Button>
             </div>

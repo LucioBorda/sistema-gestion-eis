@@ -329,16 +329,22 @@ export default function AsignacionMateriasPage(): React.ReactElement {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
               {isEditing ? "Guardar Modificaciones" : "Crear Asignación"}
             </Button>
           </div>
@@ -350,7 +356,7 @@ export default function AsignacionMateriasPage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title="Ficha de Asignación Docente"
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedAsig && (
           <div className="space-y-3 py-2 text-xs">
@@ -381,8 +387,13 @@ export default function AsignacionMateriasPage(): React.ReactElement {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar
               </Button>
             </div>

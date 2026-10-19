@@ -281,7 +281,7 @@ export const CalendarioInstitucional: React.FC = () => {
 
   // Roles autorizados a agendar eventos
   const canScheduleEvents =
-    currentUser.role === "Directora" || currentUser.role === "Secretaria";
+    currentUser.role === "Directora" || currentUser.role === "Secretaria" || currentUser.role === "Administrador";
 
   // Guardar nuevo evento
   const handleSaveNuevoEvento = (e: React.FormEvent) => {
@@ -689,7 +689,7 @@ export const CalendarioInstitucional: React.FC = () => {
         onClose={() => setModalNuevoEventoOpen(false)}
         title="Agendar Evento Institucional"
         subtitle="Registro de actividades, reuniones y exámenes en el calendario escolar"
-        maxWidth="lg"
+        maxWidth="xl"
       >
         <form onSubmit={handleSaveNuevoEvento} className="space-y-4 py-2">
           <Input
@@ -760,12 +760,13 @@ export const CalendarioInstitucional: React.FC = () => {
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => setModalNuevoEventoOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
@@ -774,6 +775,7 @@ export const CalendarioInstitucional: React.FC = () => {
               variant="coral"
               size="sm"
               icon={<CheckCircle2 className="w-4 h-4" />}
+              className="w-full sm:w-auto justify-center"
             >
               Guardar Evento en Calendario
             </Button>

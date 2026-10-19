@@ -140,7 +140,7 @@ export function checkWithinAulaOperatingHours(
   horarioInicio?: string,
   horarioFin?: string
 ): OperatingHoursCheckResult {
-  if (!horarioInicio || !horarioFin || !diasHorarios) {
+  if (!diasHorarios) {
     return { isWithinRange: true };
   }
 
@@ -149,15 +149,19 @@ export function checkWithinAulaOperatingHours(
     return { isWithinRange: true };
   }
 
-  const [h1, m1] = horarioInicio.split(":").map((v) => parseInt(v, 10));
-  const [h2, m2] = horarioFin.split(":").map((v) => parseInt(v, 10));
-  const startLimitMinutes = (isNaN(h1) ? 0 : h1) * 60 + (isNaN(m1) ? 0 : m1);
-  const endLimitMinutes = (isNaN(h2) ? 0 : h2) * 60 + (isNaN(m2) ? 0 : m2);
+  // Institutional campus operating window: 09:00 to 21:30
+  const effectiveStart = horarioInicio && horarioInicio < "09:00" ? horarioInicio : "09:00";
+  const effectiveEnd = horarioFin && horarioFin > "21:30" ? horarioFin : "21:30";
+
+  const [h1, m1] = effectiveStart.split(":").map((v) => parseInt(v, 10));
+  const [h2, m2] = effectiveEnd.split(":").map((v) => parseInt(v, 10));
+  const startLimitMinutes = (isNaN(h1) ? 9 : h1) * 60 + (isNaN(m1) ? 0 : m1);
+  const endLimitMinutes = (isNaN(h2) ? 21 : h2) * 60 + (isNaN(m2) ? 30 : m2);
 
   if (parsed.startMinutes < startLimitMinutes || parsed.endMinutes > endLimitMinutes) {
     return {
       isWithinRange: false,
-      details: `El horario "${diasHorarios}" excede la franja de uso permitida para este aula (${horarioInicio} a ${horarioFin} hs).`,
+      details: `El horario "${diasHorarios}" excede la franja de uso institucional permitida (${effectiveStart} a ${effectiveEnd} hs).`,
     };
   }
 

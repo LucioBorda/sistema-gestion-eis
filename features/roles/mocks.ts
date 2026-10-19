@@ -5,14 +5,14 @@ export const INITIAL_ROLES: RoleItem[] = [
     id: "rol-1",
     codigo: "ROLE_DIRECTORA",
     nombre: "Directora General / Rectora",
-    descripcion: "Supervisión institucional, académica, tesorería, auditoría y administración de contenidos Landing.",
-    usuariosAsignados: 2,
-    totalPermisos: 28,
+    descripcion: "Supervisión directiva institucional, académica, tesorería, auditoría y administración de contenidos Landing.",
+    usuariosAsignados: 1,
+    totalPermisos: 26,
     esSistema: true,
     color: "coral",
     permisos: [
-      "institucion.editar", "gestion.crear", "gestion.cerrar", "roles.gestionar",
-      "usuarios.gestionar", "estudiantes.crear", "estudiantes.editar", "estudiantes.eliminar",
+      "institucion.editar", "gestion.crear", "gestion.cerrar",
+      "estudiantes.crear", "estudiantes.editar", "estudiantes.eliminar",
       "estudiantes.ver", "estudiantes.importar", "inscripciones.aprobar", "calificaciones.aprobar",
       "calificaciones.editar", "cuotas.cobrar", "cuotas.anular", "reportes.financieros",
       "landing.editar", "landing.publicar"
@@ -21,15 +21,18 @@ export const INITIAL_ROLES: RoleItem[] = [
   {
     id: "rol-2",
     codigo: "ROLE_ADMIN",
-    nombre: "Administrador de Sistemas",
-    descripcion: "Configuración técnica, copias de seguridad, gestión de usuarios, roles y auditoría de accesos.",
-    usuariosAsignados: 2,
-    totalPermisos: 32,
+    nombre: "Administrador General / Manager",
+    descripcion: "Control total del sistema: seguridad, roles de acceso, matriz de permisos, usuarios y toda la infraestructura institucional.",
+    usuariosAsignados: 1,
+    totalPermisos: 38,
     esSistema: true,
     color: "navy",
     permisos: [
-      "usuarios.crear", "usuarios.editar", "usuarios.suspender", "roles.gestionar",
-      "permisos.asignar", "sistema.backups", "sistema.auditoria", "landing.editar"
+      "institucion.editar", "gestion.crear", "gestion.cerrar", "roles.gestionar",
+      "permisos.asignar", "usuarios.crear", "usuarios.editar", "usuarios.suspender",
+      "usuarios.gestionar", "sistema.backups", "sistema.auditoria", "landing.editar",
+      "estudiantes.crear", "estudiantes.editar", "estudiantes.eliminar", "estudiantes.ver",
+      "cuotas.cobrar", "cuotas.anular", "calificaciones.aprobar", "reportes.financieros"
     ],
   },
   {

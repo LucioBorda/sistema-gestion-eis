@@ -246,16 +246,19 @@ export default function CobranzasPage(): React.ReactElement {
     },
   ];
 
+  const isFinancialAdmin =
+    currentUser.role === "Directora" || currentUser.role === "Administrador";
+
   return (
     <div className="space-y-6">
       {/* 4 Financial / Operational KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            {currentUser.role === "Directora" ? "Efectivo en Caja Diaria" : "Cobros en Efectivo"}
+            {isFinancialAdmin ? "Efectivo en Caja Diaria" : "Cobros en Efectivo"}
           </span>
           <span className="text-2xl font-black text-emerald-700 mt-1 block">
-            {currentUser.role === "Directora"
+            {isFinancialAdmin
               ? formatCurrency(totalEfectivo)
               : `${cobranzas.filter((c) => c.estado === "Pagado" && c.metodoPago === "Efectivo").length} cobros`}
           </span>
@@ -267,10 +270,10 @@ export default function CobranzasPage(): React.ReactElement {
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            {currentUser.role === "Directora" ? "Transferencias Bancarias" : "Cobros por Transferencia"}
+            {isFinancialAdmin ? "Transferencias Bancarias" : "Cobros por Transferencia"}
           </span>
           <span className="text-2xl font-black text-blue-800 mt-1 block">
-            {currentUser.role === "Directora"
+            {isFinancialAdmin
               ? formatCurrency(totalTransferencia)
               : `${cobranzas.filter((c) => c.estado === "Pagado" && c.metodoPago === "Transferencia").length} cobros`}
           </span>
@@ -315,10 +318,10 @@ export default function CobranzasPage(): React.ReactElement {
         data={filteredCobranzas}
         columns={columns}
         keyExtractor={(item) => item.id}
-        onExportExcel={currentUser.role === "Directora" ? handleExportExcel : undefined}
-        onExportPdf={currentUser.role === "Directora" ? handleExportPdf : undefined}
+        onExportExcel={isFinancialAdmin ? handleExportExcel : undefined}
+        onExportPdf={isFinancialAdmin ? handleExportPdf : undefined}
         onView={handleOpenDetail}
-        onDelete={currentUser.role === "Directora" ? handleOpenDelete : undefined}
+        onDelete={isFinancialAdmin ? handleOpenDelete : undefined}
         extraFilters={
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1">
             {["TODOS", "Pagado", "Pendiente", "Vencido"].map((st) => (
@@ -365,7 +368,7 @@ export default function CobranzasPage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={selectedCob?.reciboNumero || "Detalle de Comprobante"}
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedCob && (
           <div className="space-y-3 py-2 text-xs">
@@ -420,8 +423,17 @@ export default function CobranzasPage(): React.ReactElement {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex flex-wrap justify-between items-center gap-2">
-              <div className="flex items-center gap-2">
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
+                Cerrar
+              </Button>
+
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto justify-end">
                 <Button
                   variant="coral"
                   size="sm"
@@ -430,6 +442,7 @@ export default function CobranzasPage(): React.ReactElement {
                     setReciboModalOpen(true);
                   }}
                   icon={<Printer className="w-4 h-4" />}
+                  className="w-full sm:w-auto justify-center"
                 >
                   Imprimir Recibo
                 </Button>
@@ -439,16 +452,12 @@ export default function CobranzasPage(): React.ReactElement {
                     setDetailModalOpen(false);
                     handleOpenWhatsApp(selectedCob);
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs"
+                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Enviar por WhatsApp</span>
                 </button>
               </div>
-
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
-                Cerrar
-              </Button>
             </div>
           </div>
         )}

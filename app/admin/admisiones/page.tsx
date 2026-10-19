@@ -30,7 +30,6 @@ import {
   CheckCircle2,
   Clock,
   Award,
-  Sparkles,
   Printer,
   ChevronRight,
   ShieldCheck,
@@ -260,34 +259,7 @@ export default function AdmisionesPage(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 text-[#E63956] text-xs font-bold border border-rose-200 mb-2">
-            <Sparkles className="w-3.5 h-3.5" />
-            Admisiones & Ciclo del Estudiante (State Machine)
-          </div>
-          <h1 className="text-xl font-black text-[#00205B] tracking-tight">
-            Circuito Operativo del Test Nivelatorio y Admisiones
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Desde la precarga de leads hasta la toma presencial, digitalización del examen físico, dictamen de la Directora y cierre de matrícula en mostrador.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCalendar(!showCalendar)}
-            icon={<Calendar className="w-4 h-4 text-[#00205B]" />}
-          >
-            {showCalendar ? "Ocultar Agenda" : "Ver Calendario"}
-          </Button>
-        </div>
-      </div>
-
-      {/* 4 Funnel KPI Progress Blocks (Aspirantes en circuito) */}
+      {/* 4 Funnel KPI Progress Blocks (Mediciones de aspirantes en circuito) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -335,6 +307,29 @@ export default function AdmisionesPage(): React.ReactElement {
           <span className="text-[10px] text-emerald-600 block mt-0.5 font-bold">
             Listos p/ matricular
           </span>
+        </div>
+      </div>
+
+      {/* Panel Circuito Operativo del Test Nivelatorio y Admisiones */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-[#00205B] tracking-tight">
+            Circuito Operativo del Test Nivelatorio y Admisiones
+          </h1>
+          <p className="text-xs text-slate-500 mt-1 max-w-2xl">
+            Desde la precarga de leads hasta la toma presencial, digitalización del examen físico, dictamen de la Directora y cierre de matrícula en mostrador.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCalendar(!showCalendar)}
+            icon={<Calendar className="w-4 h-4 text-[#00205B]" />}
+          >
+            {showCalendar ? "Ocultar Agenda" : "Ver Calendario"}
+          </Button>
         </div>
       </div>
 
@@ -479,7 +474,7 @@ export default function AdmisionesPage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={selectedPostulante?.nombreCompleto || "Ficha del Aspirante"}
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedPostulante && (
           <div className="space-y-3 py-2 text-xs">
@@ -524,8 +519,13 @@ export default function AdmisionesPage(): React.ReactElement {
               )}
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar
               </Button>
             </div>

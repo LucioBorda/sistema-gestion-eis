@@ -93,19 +93,19 @@ export default function AdminLayout({
           title: "Dashboard Principal",
           href: "/admin",
           icon: LayoutDashboard,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
         {
           title: "Datos de Institución",
           href: "/admin/institucion",
           icon: Building,
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador", "Directora"],
         },
         {
           title: "Gestión Educativa (Ciclos)",
           href: "/admin/gestion-educativa",
           icon: CalendarDays,
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador", "Directora"],
         },
       ],
     },
@@ -118,7 +118,7 @@ export default function AdminLayout({
           icon: UserPlus,
           badge: admisionesPendientes > 0 ? `${admisionesPendientes} tests` : undefined,
           badgeVariant: "coral",
-          roleRequired: ["Directora", "Secretaria"],
+          roleRequired: ["Administrador", "Directora", "Secretaria"],
         },
         {
           title: "Cobranzas & Caja Diaria",
@@ -126,13 +126,13 @@ export default function AdminLayout({
           icon: Wallet,
           badge: vencidasCount > 0 ? `${vencidasCount} mora` : undefined,
           badgeVariant: "coral",
-          roleRequired: ["Directora", "Secretaria"],
+          roleRequired: ["Administrador", "Directora", "Secretaria"],
         },
         {
-          title: "Catálogo Cursos (19 Niveles)",
+          title: "Catálogo de Cursos",
           href: "/admin/cursos",
           icon: BookOpen,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
       ],
     },
@@ -140,34 +140,34 @@ export default function AdminLayout({
       title: "ESTRUCTURA ACADÉMICA",
       items: [
         {
-          title: "Niveles y Turnos",
+          title: "Niveles",
           href: "/admin/niveles-turnos",
           icon: Layers,
-          roleRequired: ["Directora", "Secretaria"],
+          roleRequired: ["Administrador", "Directora", "Secretaria"],
         },
         {
           title: "Aulas e Instalaciones",
           href: "/admin/aulas",
           icon: DoorOpen,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
         {
           title: "Grados / Comisiones",
           href: "/admin/grados-paralelos",
           icon: School,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
         {
           title: "Catálogo de Materias",
           href: "/admin/materias",
           icon: BookMarked,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
         {
           title: "Asignación de Materias",
           href: "/admin/asignacion-materias",
           icon: BookMarked,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
       ],
     },
@@ -178,7 +178,7 @@ export default function AdminLayout({
           title: "Padrón de Estudiantes",
           href: "/admin/estudiantes",
           icon: GraduationCap,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
         {
           title: "Matriculaciones",
@@ -186,19 +186,19 @@ export default function AdminLayout({
           icon: UserCheck,
           badge: inscripcionesPendientes > 0 ? inscripcionesPendientes : undefined,
           badgeVariant: "warning",
-          roleRequired: ["Directora", "Secretaria"],
+          roleRequired: ["Administrador", "Directora", "Secretaria"],
         },
         {
           title: "Kardex Estudiantil 360°",
           href: "/admin/kardex",
           icon: Award,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
         {
           title: "Calificaciones y Actas",
           href: "/admin/calificaciones",
           icon: FileSpreadsheet,
-          roleRequired: ["Directora", "Secretaria", "Docente"],
+          roleRequired: ["Administrador", "Directora", "Secretaria", "Docente"],
         },
       ],
     },
@@ -209,31 +209,31 @@ export default function AdminLayout({
           title: "Roles de Acceso",
           href: "/admin/roles",
           icon: ShieldCheck,
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador"],
         },
         {
           title: "Matriz de Permisos",
           href: "/admin/permisos",
           icon: KeyRound,
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador"],
         },
         {
           title: "Cuentas de Usuarios",
           href: "/admin/usuarios",
           icon: Users,
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador"],
         },
         {
           title: "Personal Administrativo",
           href: "/admin/personal-admin",
           icon: Briefcase,
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador", "Directora"],
         },
         {
           title: "Personal Docente",
           href: "/admin/personal-docente",
           icon: UserCheck,
-          roleRequired: ["Directora", "Secretaria"],
+          roleRequired: ["Administrador", "Directora", "Secretaria"],
         },
       ],
     },
@@ -244,9 +244,9 @@ export default function AdminLayout({
           title: "Gestor Fotos Landing CMS",
           href: "/admin/landing-cms",
           icon: ImageIcon,
-          badge: "Directora",
+          badge: "Directora / Admin",
           badgeVariant: "coral",
-          roleRequired: ["Directora"],
+          roleRequired: ["Administrador", "Directora"],
         },
       ],
     },
@@ -608,7 +608,7 @@ export default function AdminLayout({
         onClose={() => setRoleModalOpen(false)}
         title="Conmutador Rápido de Roles (Simulación RBAC)"
         subtitle="Permite cambiar de perspectiva para experimentar la interfaz con los permisos de cada cargo"
-        maxWidth="md"
+        maxWidth="lg"
       >
         <div className="space-y-3 py-2">
           {ROLE_PRESETS.map((preset) => {
@@ -651,8 +651,13 @@ export default function AdminLayout({
             );
           })}
         </div>
-        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-          <Button variant="secondary" size="sm" onClick={() => setRoleModalOpen(false)}>
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setRoleModalOpen(false)}
+            className="w-full sm:w-auto justify-center"
+          >
             Cerrar
           </Button>
         </div>
@@ -664,7 +669,7 @@ export default function AdminLayout({
         onClose={() => setSessionsModalOpen(false)}
         title="Gestión de Sesiones Activas"
         subtitle="Monitoreo de accesos concurrentes, IPs y navegadores conectados con esta cuenta"
-        maxWidth="lg"
+        maxWidth="xl"
       >
         <div className="space-y-3 py-2">
           {activeSessions.map((session) => (
@@ -701,7 +706,7 @@ export default function AdminLayout({
                   variant="outline"
                   size="sm"
                   onClick={() => terminateSession(session.id)}
-                  className="text-rose-600 border-rose-300 hover:bg-rose-50 text-xs"
+                  className="text-rose-600 border-rose-300 hover:bg-rose-50 text-xs w-full sm:w-auto justify-center"
                 >
                   Cerrar Sesión Remota
                 </Button>
@@ -709,11 +714,16 @@ export default function AdminLayout({
             </div>
           ))}
         </div>
-        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
-          <span className="text-xs text-slate-500">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <span className="text-xs text-slate-500 text-center sm:text-left">
             {activeSessions.length} sesiones detectadas
           </span>
-          <Button variant="secondary" size="sm" onClick={() => setSessionsModalOpen(false)}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setSessionsModalOpen(false)}
+            className="w-full sm:w-auto justify-center"
+          >
             Cerrar Ventana
           </Button>
         </div>
@@ -725,7 +735,7 @@ export default function AdminLayout({
         onClose={() => setNotificationsOpen(false)}
         title="Centro de Alertas y Notificaciones"
         subtitle="Avisos prioritarios del sistema académico y financiero de EIS Institute"
-        maxWidth="md"
+        maxWidth="lg"
       >
         <div className="space-y-2.5 py-2">
           {vencidasCount > 0 && (

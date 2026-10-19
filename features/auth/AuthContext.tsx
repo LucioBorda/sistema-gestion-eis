@@ -19,14 +19,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<CurrentUser>(() => {
+    const defaultPreset = ROLE_PRESETS[0]; // Administrador General
     return {
-      id: "usr-1",
-      name: ROLE_PRESETS[0].name,
-      email: ROLE_PRESETS[0].email,
-      role: "Directora",
-      avatar: ROLE_PRESETS[0].avatar,
+      id: "usr-4",
+      name: defaultPreset.name,
+      email: defaultPreset.email,
+      role: defaultPreset.role,
+      avatar: defaultPreset.avatar,
       lastLogin: "Hoy, 08:30 hs",
-      department: "Dirección General & Rectoría",
+      department: defaultPreset.title,
     };
   });
 

@@ -27,8 +27,8 @@ export default function LoginPage(): React.ReactElement {
   const router = useRouter();
   const { loginAs, activeSessions, terminateSession } = useAuth();
 
-  const [selectedRole, setSelectedRole] = useState<UserRole>("Directora");
-  const [email, setEmail] = useState("direccion@culturalensenada.edu.ar");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("Administrador");
+  const [email, setEmail] = useState("admin.ti@culturalensenada.edu.ar");
   const [password, setPassword] = useState("••••••••••••");
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);

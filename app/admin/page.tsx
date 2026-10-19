@@ -109,8 +109,8 @@ export default function AdminDashboardPage(): React.ReactElement {
           </div>
         </div>
 
-        {/* Metric 2: Role-tailored (Directora: Recaudación $ / Secretaria: Pagos procesados / Docente: Actas) */}
-        {currentUser.role === "Directora" && (
+        {/* Metric 2: Role-tailored (Directora / Administrador: Recaudación $ / Secretaria: Pagos procesados / Docente: Actas) */}
+        {(currentUser.role === "Directora" || currentUser.role === "Administrador") && (
           <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -200,8 +200,8 @@ export default function AdminDashboardPage(): React.ReactElement {
           </div>
         </div>
 
-        {/* Metric 4: Role-tailored (Directora: Morosidad % / Secretaria: Cuotas Pendientes / Docente: Promedio) */}
-        {currentUser.role === "Directora" && (
+        {/* Metric 4: Role-tailored (Directora / Administrador: Morosidad % / Secretaria: Cuotas Pendientes / Docente: Promedio) */}
+        {(currentUser.role === "Directora" || currentUser.role === "Administrador") && (
           <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs hover:shadow-xs transition-shadow">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -268,8 +268,8 @@ export default function AdminDashboardPage(): React.ReactElement {
       {/* CALENDARIO INSTITUCIONAL INTEGRAL (ESTILO GOOGLE CALENDAR) */}
       <CalendarioInstitucional />
 
-      {/* DIRECTORA FINANCIAL AUDIT (Exclusively visible for Directora) */}
-      {currentUser.role === "Directora" && (
+      {/* FINANCIAL AUDIT (Visible for Directora and Administrador) */}
+      {(currentUser.role === "Directora" || currentUser.role === "Administrador") && (
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <div>

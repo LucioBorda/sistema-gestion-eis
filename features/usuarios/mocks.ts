@@ -41,7 +41,7 @@ export const INITIAL_USUARIOS: UsuarioItem[] = [
     id: "usr-4",
     nombreCompleto: "Ing. Martín Almada",
     email: "admin.ti@culturalensenada.edu.ar",
-    rol: "Administrador de Sistemas",
+    rol: "Administrador General / Manager",
     rolCodigo: "ROLE_ADMIN",
     estado: "Activo",
     ultimoAcceso: "Hoy, 10:05 hs",

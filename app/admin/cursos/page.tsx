@@ -211,41 +211,6 @@ export default function CursosOficialesPage(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#00205B] text-xs font-bold border border-blue-200 mb-2">
-            <GraduationCap className="w-3.5 h-3.5 text-[#E63956]" />
-            Diseño Curricular Oficial EIS Institute
-          </div>
-          <h1 className="text-xl font-black text-[#00205B] tracking-tight">
-            Catálogo Unificado de los 19 Programas Oficiales
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-            Estructura curricular con cargas horarias semanales certificadas, vinculación internacional con Anglia Examinations y matriz de aranceles escalonada por tramos.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportExcel}
-            icon={<FileText className="w-4 h-4 text-emerald-600" />}
-          >
-            Exportar Excel
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleExportPdf}
-            icon={<BookOpen className="w-4 h-4" />}
-          >
-            Imprimir Catálogo
-          </Button>
-        </div>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
@@ -294,6 +259,8 @@ export default function CursosOficialesPage(): React.ReactElement {
         columns={columns}
         keyExtractor={(item) => item.id}
         onView={handleOpenDetail}
+        onExportExcel={handleExportExcel}
+        onExportPdf={handleExportPdf}
         initialPageSize={19}
         extraFilters={
           <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1 text-xs">
@@ -323,7 +290,7 @@ export default function CursosOficialesPage(): React.ReactElement {
         onClose={() => setDetailModalOpen(false)}
         title={selectedCurso ? `${selectedCurso.numeroOrden}. ${selectedCurso.nombre}` : "Detalle de Curso"}
         subtitle="Ficha curricular completa, bibliografía, aranceles y comisiones con cupos"
-        maxWidth="lg"
+        maxWidth="xl"
       >
         {selectedCurso && (
           <div className="space-y-4 py-2 text-xs">
@@ -485,8 +452,13 @@ export default function CursosOficialesPage(): React.ReactElement {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end">
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar Ficha
               </Button>
             </div>

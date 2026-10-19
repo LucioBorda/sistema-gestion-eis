@@ -1135,16 +1135,22 @@ function InscripcionesContent(): React.ReactElement {
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
-              size="sm"
+              size="md"
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="md"
+              className="w-full sm:w-auto justify-center font-bold"
+            >
               {isEditing ? "Guardar Modificaciones" : "Confirmar Matriculación"}
             </Button>
           </div>
@@ -1206,24 +1212,29 @@ function InscripcionesContent(): React.ReactElement {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
+                Cerrar
+              </Button>
               {selectedIns.estado === "Pendiente" && (
                 <Button
                   variant="coral"
-                  size="sm"
+                  size="md"
                   onClick={() => {
                     setDetailModalOpen(false);
                     handleSeleccionarParaAcreditar(selectedIns);
                   }}
                   icon={<Receipt className="w-3.5 h-3.5" />}
-                  className="font-bold shadow-xs"
+                  className="font-bold shadow-xs w-full sm:w-auto justify-center"
                 >
                   Acreditar Deuda en Ventanilla
                 </Button>
               )}
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
-                Cerrar
-              </Button>
             </div>
           </div>
         )}

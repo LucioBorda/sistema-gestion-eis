@@ -159,7 +159,7 @@ export const WhatsAppCobranzaModal: React.FC<WhatsAppCobranzaModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Comunicación Oficial por WhatsApp"
-      maxWidth="lg"
+      maxWidth="xl"
     >
       <div className="space-y-4 py-1 text-slate-800">
         {/* Banner de Identificación del Comprobante */}
@@ -414,19 +414,19 @@ export const WhatsAppCobranzaModal: React.FC<WhatsAppCobranzaModalProps> = ({
         </div>
 
         {/* 4. Barra de Acciones */}
-        <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="pt-3 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center justify-between gap-2.5">
           <Button
             variant="secondary"
             size="sm"
             onClick={handleCopy}
             icon={copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            className="w-full sm:w-auto text-xs"
+            className="w-full sm:w-auto text-xs justify-center"
           >
             {copied ? "¡Mensaje Copiado!" : "Copiar Texto al Portapapeles"}
           </Button>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button variant="secondary" size="sm" onClick={onClose}>
+          <div className="flex flex-col-reverse sm:flex-row items-center gap-2 w-full sm:w-auto justify-end">
+            <Button variant="secondary" size="sm" onClick={onClose} className="w-full sm:w-auto justify-center">
               Cerrar
             </Button>
 
@@ -434,7 +434,7 @@ export const WhatsAppCobranzaModal: React.FC<WhatsAppCobranzaModalProps> = ({
               type="button"
               onClick={handleOpenWhatsApp}
               disabled={!normalizedPhone && !activePhone}
-              className={`px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all shadow-md ${
+              className={`w-full sm:w-auto px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all shadow-md ${
                 !normalizedPhone && !activePhone
                   ? "bg-slate-400 cursor-not-allowed opacity-60"
                   : "bg-emerald-600 hover:bg-emerald-700 active:scale-95 shadow-emerald-600/30"

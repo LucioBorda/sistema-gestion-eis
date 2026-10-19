@@ -394,7 +394,7 @@ export default function CalificacionesPage(): React.ReactElement {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={isEditing ? "Editar Calificación" : "Carga de Notas y Evaluaciones"}
-        maxWidth="lg"
+        maxWidth="xl"
       >
         <form onSubmit={handleSave} className="space-y-4 py-2">
           <Select
@@ -481,16 +481,22 @@ export default function CalificacionesPage(): React.ReactElement {
             />
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto justify-center"
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
               {isEditing ? "Guardar Modificaciones" : "Asentar Calificaciones"}
             </Button>
           </div>
@@ -502,7 +508,7 @@ export default function CalificacionesPage(): React.ReactElement {
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title={selectedCal?.estudianteNombre || "Detalle de Calificaciones"}
-        maxWidth="md"
+        maxWidth="lg"
       >
         {selectedCal && (
           <div className="space-y-3 py-2 text-xs">
@@ -552,7 +558,7 @@ export default function CalificacionesPage(): React.ReactElement {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+            <div className="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5">
               <Button
                 variant="outline"
                 size="sm"
@@ -561,10 +567,16 @@ export default function CalificacionesPage(): React.ReactElement {
                   setDetailModalOpen(false);
                 }}
                 icon={<Printer className="w-4 h-4 text-[#00205B]" />}
+                className="w-full sm:w-auto justify-center"
               >
                 Imprimir Boletín
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => setDetailModalOpen(false)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setDetailModalOpen(false)}
+                className="w-full sm:w-auto justify-center"
+              >
                 Cerrar
               </Button>
             </div>

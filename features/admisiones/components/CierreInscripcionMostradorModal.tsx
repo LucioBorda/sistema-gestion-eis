@@ -228,12 +228,18 @@ export const CierreInscripcionMostradorModal: React.FC<CierreInscripcionMostrado
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <span className="text-[11px] text-slate-500">
             Al confirmar, el postulante pasa a <strong>&quot;Alumno Activo&quot;</strong>, se genera legajo y recibo en caja.
           </span>
-          <div className="flex items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={onClose}>
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2.5 w-full sm:w-auto">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={onClose}
+              className="w-full sm:w-auto justify-center"
+            >
               Cancelar
             </Button>
             <Button
@@ -241,7 +247,7 @@ export const CierreInscripcionMostradorModal: React.FC<CierreInscripcionMostrado
               variant="coral"
               size="md"
               onClick={handleConfirm}
-              className="font-bold shadow-md shadow-[#E63956]/20"
+              className="font-bold shadow-md shadow-[#E63956]/20 w-full sm:w-auto justify-center"
               icon={<CheckCircle2 className="w-4 h-4" />}
             >
               Confirmar Vacante y Cobrar Matrícula

@@ -47,8 +47,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <p className="text-sm text-slate-600 mt-1 leading-relaxed">{description}</p>
         </div>
       </div>
-      <div className="mt-6 flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-        <Button variant="secondary" size="md" onClick={onClose} disabled={isLoading}>
+      <div className="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-4 border-t border-slate-100">
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onClose}
+          disabled={isLoading}
+          className="w-full sm:w-auto justify-center"
+        >
           {cancelText}
         </Button>
         <Button
@@ -56,6 +62,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           size="md"
           onClick={onConfirm}
           isLoading={isLoading}
+          className="w-full sm:w-auto justify-center font-bold"
         >
           {confirmText}
         </Button>
