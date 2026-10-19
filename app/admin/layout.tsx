@@ -20,6 +20,7 @@ import {
   FileSpreadsheet,
   Award,
   Wallet,
+  DoorOpen,
   Image as ImageIcon,
   Menu,
   X,
@@ -143,6 +144,12 @@ export default function AdminLayout({
           href: "/admin/niveles-turnos",
           icon: Layers,
           roleRequired: ["Directora", "Secretaria"],
+        },
+        {
+          title: "Aulas e Instalaciones",
+          href: "/admin/aulas",
+          icon: DoorOpen,
+          roleRequired: ["Directora", "Secretaria", "Docente"],
         },
         {
           title: "Grados / Comisiones",

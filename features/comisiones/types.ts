@@ -8,6 +8,7 @@ export interface Comision {
   nivelNombre: string;
   turno: TurnoType;
   diasHorarios: string;
+  aulaId?: string;
   aulaFisica: string;
   cupoMaximo: number;
   cupoOcupado: number;

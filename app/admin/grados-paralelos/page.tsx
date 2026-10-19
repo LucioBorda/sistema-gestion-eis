@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import { useGlobalData } from "@/features/core/DataContext";
 import { Comision } from "@/features/comisiones/types";
 import { TurnoType } from "@/features/niveles-turnos/types";
+import { checkScheduleConflict } from "@/features/aulas/scheduleUtils";
 import { DataTable, ColumnDef } from "@/components/ui/DataTable";
 import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -12,9 +14,21 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
 import { exportToExcelCSV, openInstitutionalPrintPreview } from "@/lib/exportUtils";
+import {
+  AlertTriangle,
+  DoorOpen,
+  Users,
+  Clock,
+  Tv,
+  Presentation,
+  BookOpen,
+  Wind,
+  CheckCircle2,
+  Building2,
+} from "lucide-react";
 
 export default function GradosParalelosPage(): React.ReactElement {
-  const { comisiones, nivelesTurnos, addComision, updateComision, deleteComision } =
+  const { comisiones, nivelesTurnos, aulas, addComision, updateComision, deleteComision } =
     useGlobalData();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,9 +44,31 @@ export default function GradosParalelosPage(): React.ReactElement {
   const [nivelId, setNivelId] = useState(nivelesTurnos[0]?.id || "niv-3");
   const [turno, setTurno] = useState<TurnoType>("Tarde");
   const [diasHorarios, setDiasHorarios] = useState("");
+  const [aulaId, setAulaId] = useState(aulas[0]?.id || "aula-1");
   const [aulaFisica, setAulaFisica] = useState("Aula 1");
   const [cupoMaximo, setCupoMaximo] = useState(18);
   const [activo, setActivo] = useState(true);
+
+  // Selected Aula Object
+  const selectedAulaObj = useMemo(
+    () => aulas.find((a) => a.id === aulaId || a.nombre === aulaFisica),
+    [aulas, aulaId, aulaFisica]
+  );
+
+  // Real-time Schedule Conflict Detection
+  const conflictResult = useMemo(() => {
+    return checkScheduleConflict(
+      aulaId,
+      diasHorarios,
+      isEditing && selectedComision ? selectedComision.id : undefined,
+      comisiones
+    );
+  }, [aulaId, diasHorarios, isEditing, selectedComision, comisiones]);
+
+  const isExceedingCapacity = useMemo(() => {
+    if (!selectedAulaObj) return false;
+    return cupoMaximo > selectedAulaObj.capacidadMaxima;
+  }, [cupoMaximo, selectedAulaObj]);
 
   const handleOpenNew = () => {
     setIsEditing(false);
@@ -42,8 +78,10 @@ export default function GradosParalelosPage(): React.ReactElement {
     setNivelId(nivelesTurnos[0]?.id || "niv-3");
     setTurno("Tarde");
     setDiasHorarios("Lunes y Miércoles 16:30 - 18:00 hs");
-    setAulaFisica("Aula 2 (Laboratorio)");
-    setCupoMaximo(18);
+    const defaultAula = aulas[0];
+    setAulaId(defaultAula?.id || "aula-1");
+    setAulaFisica(defaultAula?.nombre || "Aula 1 (Planta Baja)");
+    setCupoMaximo(defaultAula?.capacidadMaxima || 18);
     setActivo(true);
     setModalOpen(true);
   };
@@ -56,6 +94,8 @@ export default function GradosParalelosPage(): React.ReactElement {
     setNivelId(item.nivelId);
     setTurno(item.turno);
     setDiasHorarios(item.diasHorarios);
+    const matchedAula = aulas.find((a) => a.id === item.aulaId || a.nombre === item.aulaFisica);
+    setAulaId(matchedAula?.id || item.aulaId || aulas[0]?.id || "aula-1");
     setAulaFisica(item.aulaFisica);
     setCupoMaximo(item.cupoMaximo);
     setActivo(item.activo);
@@ -74,8 +114,15 @@ export default function GradosParalelosPage(): React.ReactElement {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (conflictResult.hasConflict) {
+      alert("No se puede guardar la comisión porque existe una superposición de horarios en el aula seleccionada.");
+      return;
+    }
+
     const nivelObj = nivelesTurnos.find((n) => n.id === nivelId);
     const nivelNombre = nivelObj ? nivelObj.nombre : "Nivel General";
+    const aulaObj = aulas.find((a) => a.id === aulaId);
+    const resolvedAulaNombre = aulaObj ? aulaObj.nombre : aulaFisica;
 
     if (isEditing && selectedComision) {
       updateComision({
@@ -86,7 +133,8 @@ export default function GradosParalelosPage(): React.ReactElement {
         nivelNombre,
         turno,
         diasHorarios,
-        aulaFisica,
+        aulaId,
+        aulaFisica: resolvedAulaNombre,
         cupoMaximo,
         activo,
       });
@@ -99,7 +147,8 @@ export default function GradosParalelosPage(): React.ReactElement {
         nivelNombre,
         turno,
         diasHorarios,
-        aulaFisica,
+        aulaId,
+        aulaFisica: resolvedAulaNombre,
         cupoMaximo,
         cupoOcupado: 0,
         activo,
@@ -203,11 +252,35 @@ export default function GradosParalelosPage(): React.ReactElement {
     },
     {
       id: "aula",
-      header: "Aula Física",
-      accessorKey: "aulaFisica",
-      cell: (item) => (
-        <span className="text-xs font-semibold text-slate-700">{item.aulaFisica}</span>
-      ),
+      header: "Aula e Instrumentos",
+      cell: (item) => {
+        const aulaObj = aulas.find((a) => a.id === item.aulaId || a.nombre === item.aulaFisica);
+        return (
+          <div className="space-y-1">
+            <span className="text-xs font-bold text-slate-800 block flex items-center gap-1">
+              <DoorOpen className="w-3.5 h-3.5 text-[#00205B]" />
+              {item.aulaFisica}
+            </span>
+            {aulaObj && aulaObj.instrumentosDidacticos.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {aulaObj.instrumentosDidacticos.slice(0, 2).map((inst) => (
+                  <span
+                    key={inst}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-blue-50 text-[#00205B] font-medium"
+                  >
+                    {inst.split("/")[0].trim()}
+                  </span>
+                ))}
+                {aulaObj.instrumentosDidacticos.length > 2 && (
+                  <span className="text-[10px] text-slate-400 font-semibold self-center">
+                    +{aulaObj.instrumentosDidacticos.length - 2}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "cupo",
@@ -316,22 +389,94 @@ export default function GradosParalelosPage(): React.ReactElement {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Días y Horarios"
-              value={diasHorarios}
-              onChange={(e) => setDiasHorarios(e.target.value)}
-              placeholder="ej: Lunes y Miércoles 16:30 - 18:00 hs"
-              required
-            />
-            <Input
-              label="Aula Física Asignada"
-              value={aulaFisica}
-              onChange={(e) => setAulaFisica(e.target.value)}
-              placeholder="ej: Aula 2 (Laboratorio)"
-              required
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Input
+                label="Días y Horarios Semanales"
+                value={diasHorarios}
+                onChange={(e) => setDiasHorarios(e.target.value)}
+                placeholder="ej: Lunes y Miércoles 16:30 - 18:00 hs"
+                required
+              />
+              <span className="text-[10px] text-slate-400 block mt-1">
+                Formato sugerido: [Días] [Horario inicio] - [Horario fin] hs
+              </span>
+            </div>
+
+            <div>
+              <Select
+                label="Aula Física Asignada (Capacidad e Instrumentos)"
+                value={aulaId}
+                onChange={(e) => {
+                  const newAulaId = e.target.value;
+                  setAulaId(newAulaId);
+                  const found = aulas.find((a) => a.id === newAulaId);
+                  if (found) {
+                    setAulaFisica(found.nombre);
+                    if (cupoMaximo > found.capacidadMaxima) {
+                      setCupoMaximo(found.capacidadMaxima);
+                    }
+                  }
+                }}
+                options={aulas.map((a) => ({
+                  value: a.id,
+                  label: `${a.nombre} (Capacidad: ${a.capacidadMaxima} cupos) - ${a.ubicacion}`,
+                }))}
+              />
+              <span className="text-[10px] text-slate-400 block mt-1">
+                Vinculada al inventario de infraestructura escolar.
+              </span>
+            </div>
           </div>
+
+          {/* Ficha rápida del aula seleccionada */}
+          {selectedAulaObj && (
+            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#00205B] flex items-center gap-1.5">
+                  <DoorOpen className="w-3.5 h-3.5" />
+                  Atributos de {selectedAulaObj.nombre}:
+                </span>
+                <span className="font-extrabold text-[#00205B]">
+                  Capacidad Física: {selectedAulaObj.capacidadMaxima} alumnos
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {selectedAulaObj.instrumentosDidacticos.map((inst) => (
+                  <span
+                    key={inst}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md bg-white border border-blue-200 text-slate-700 text-[10px] font-semibold"
+                  >
+                    ✓ {inst}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Detección en Tiempo Real de Superposición Horaria */}
+          {conflictResult.hasConflict && (
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-start gap-2.5 shadow-2xs animate-in fade-in">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block">¡Conflicto de Superposición en el Aula!</span>
+                <span className="mt-0.5 block">{conflictResult.conflictDetails}</span>
+                <span className="text-[11px] text-rose-600 font-semibold block mt-1">
+                  Modifique los días/horarios o asigne otra aula física para poder guardar.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Advertencia si el cupo supera la capacidad del aula */}
+          {isExceedingCapacity && selectedAulaObj && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Atención:</strong> El cupo ingresado ({cupoMaximo}) supera la capacidad física máxima del aula ({selectedAulaObj.capacidadMaxima} cupos).
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Input
@@ -363,7 +508,13 @@ export default function GradosParalelosPage(): React.ReactElement {
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="coral" size="sm">
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              disabled={conflictResult.hasConflict}
+              className="font-bold shadow-xs disabled:opacity-50"
+            >
               {isEditing ? "Guardar Modificaciones" : "Crear Comisión"}
             </Button>
           </div>

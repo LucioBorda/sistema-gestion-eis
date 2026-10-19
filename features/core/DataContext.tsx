@@ -9,6 +9,8 @@ import { NivelTurno } from "../niveles-turnos/types";
 import { INITIAL_NIVELES_TURNOS } from "../niveles-turnos/mocks";
 import { Comision } from "../comisiones/types";
 import { INITIAL_COMISIONES } from "../comisiones/mocks";
+import { Aula } from "../aulas/types";
+import { INITIAL_AULAS } from "../aulas/mocks";
 import { Materia } from "../materias/types";
 import { INITIAL_MATERIAS } from "../materias/mocks";
 import { RoleItem } from "../roles/types";
@@ -59,6 +61,10 @@ interface DataContextType {
   addComision: (item: Comision) => void;
   updateComision: (item: Comision) => void;
   deleteComision: (id: string) => void;
+  aulas: Aula[];
+  addAula: (item: Aula) => void;
+  updateAula: (item: Aula) => void;
+  deleteAula: (id: string) => void;
   materias: Materia[];
   addMateria: (item: Materia) => void;
   updateMateria: (item: Materia) => void;
@@ -163,6 +169,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [comisiones, setComisiones] = useState<Comision[]>(() =>
     loadFromStorage("comisiones", INITIAL_COMISIONES)
   );
+  const [aulas, setAulas] = useState<Aula[]>(() =>
+    loadFromStorage("aulas", INITIAL_AULAS)
+  );
   const [materias, setMaterias] = useState<Materia[]>(() =>
     loadFromStorage("materias", INITIAL_MATERIAS)
   );
@@ -214,6 +223,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => saveToStorage("ciclos", ciclosLectivos), [ciclosLectivos]);
   useEffect(() => saveToStorage("niveles", nivelesTurnos), [nivelesTurnos]);
   useEffect(() => saveToStorage("comisiones", comisiones), [comisiones]);
+  useEffect(() => saveToStorage("aulas", aulas), [aulas]);
   useEffect(() => saveToStorage("materias", materias), [materias]);
   useEffect(() => saveToStorage("roles", roles), [roles]);
   useEffect(() => saveToStorage("permisos", permisos), [permisos]);
@@ -250,6 +260,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setComisiones((prev) => prev.map((c) => (c.id === item.id ? item : c)));
   const deleteComision = (id: string) =>
     setComisiones((prev) => prev.filter((c) => c.id !== id));
+
+  // Aulas
+  const addAula = (item: Aula) => setAulas((prev) => [item, ...prev]);
+  const updateAula = (item: Aula) =>
+    setAulas((prev) => prev.map((a) => (a.id === item.id ? item : a)));
+  const deleteAula = (id: string) =>
+    setAulas((prev) => prev.filter((a) => a.id !== id));
 
   // Materias
   const addMateria = (item: Materia) => setMaterias((prev) => [item, ...prev]);
@@ -542,6 +559,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCiclosLectivos(INITIAL_CICLOS_LECTIVOS);
       setNivelesTurnos(INITIAL_NIVELES_TURNOS);
       setComisiones(INITIAL_COMISIONES);
+      setAulas(INITIAL_AULAS);
       setMaterias(INITIAL_MATERIAS);
       setRoles(INITIAL_ROLES);
       setPermisos(INITIAL_PERMISOS);
@@ -579,6 +597,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addComision,
         updateComision,
         deleteComision,
+        aulas,
+        addAula,
+        updateAula,
+        deleteAula,
         materias,
         addMateria,
         updateMateria,
