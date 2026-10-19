@@ -124,6 +124,53 @@ function InscripcionesContent(): React.ReactElement {
     }
   }, [actionParam, targetPostulante?.id, comisiones]);
 
+  // Search state for Pre-Alumnos ready to matriculate (Formato Operatoria de Ventanilla)
+  const [searchPostulanteQuery, setSearchPostulanteQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Pre-alumnos list (aspirantes con test aprobado listos para matricular)
+  const preAlumnos = React.useMemo(() => {
+    return postulantes.filter((p) => p.estado === "Pre-Alumno");
+  }, [postulantes]);
+
+  // Filtered search results
+  const searchResultsPostulantes = React.useMemo(() => {
+    if (!searchPostulanteQuery.trim()) {
+      return preAlumnos;
+    }
+    const q = searchPostulanteQuery.toLowerCase();
+    return preAlumnos.filter(
+      (p) =>
+        p.nombreCompleto.toLowerCase().includes(q) ||
+        p.dni.replace(/\./g, "").includes(q.replace(/\./g, "")) ||
+        (p.resultadoCorreccion?.nivelAsignado || "").toLowerCase().includes(q)
+    );
+  }, [searchPostulanteQuery, preAlumnos]);
+
+  // Handler to select an applicant from the search desk
+  const handleSelectPostulante = (post: PostulanteItem) => {
+    setSelectedPostulanteParaMatricula(post);
+    setSearchPostulanteQuery("");
+    setIsSearchFocused(false);
+
+    // Auto-match commission based on assigned level
+    const assignedLevel = post.resultadoCorreccion?.nivelAsignado || "";
+    const matchingComision = comisiones.find((c) =>
+      c.nombre.toLowerCase().includes(assignedLevel.toLowerCase().slice(0, 6))
+    );
+    if (matchingComision) {
+      setPostComisionId(matchingComision.id);
+    } else if (comisiones[0]) {
+      setPostComisionId(comisiones[0].id);
+    }
+
+    setPostMesPago("octubre");
+    setPostArancel(35000);
+    setPostMetodoPago("Efectivo");
+    setMontoRecibidoMatricula(0);
+    setComprobanteRefMatricula(`CAJA-MATR-${Date.now().toString().slice(-4)}`);
+  };
+
   // Handle month selection change for regular form
   const handleMesChange = (mesVal: string) => {
     setMesPagoSeleccionado(mesVal);
@@ -468,260 +515,304 @@ function InscripcionesContent(): React.ReactElement {
         </div>
       )}
 
-      {/* VENTANILLA DE COBRO DE MATRICULACIÓN EN MOSTRADOR (FORMATO OPERATORIA DIARIA DE VENTANILLA) */}
-      {(selectedPostulanteParaMatricula || targetPostulante) && (
-        (() => {
-          const activePostulante = selectedPostulanteParaMatricula || targetPostulante!;
-          return (
-            <div className="bg-white rounded-2xl border-2 border-slate-200/90 shadow-sm p-6 space-y-5 animate-in fade-in duration-200">
-              {/* Header del Alumno / Aspirante (Idéntico a foto image.png) */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#00205B] flex items-center justify-center font-bold">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm">
-                      {activePostulante.nombreCompleto}
-                    </h3>
-                    <span className="text-xs text-slate-500 font-mono">
-                      DNI {activePostulante.dni} · Postulante Aprobado · {postSelectedComisionObj?.nombre || "Comisión a asignar"} · Nivel: {activePostulante.resultadoCorreccion?.nivelAsignado || "General"}
-                    </span>
-                  </div>
-                </div>
+      {/* VENTANILLA DE MATRICULACIÓN Y COBRO EN SECRETARÍA (FORMATO EXACTO SEGUNDA IMAGEN) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
+        {/* Header Membrete (Idéntico a foto 2) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 mb-1">
+              <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+              Operatoria Diaria de Ventanilla
+            </div>
+            <h2 className="text-lg font-black text-[#00205B] tracking-tight">
+              Ventanilla de Cobro Rápido en Secretaría
+            </h2>
+            <p className="text-xs text-slate-500">
+              Buscador ágil por DNI/Apellido, detección automática de tramos de mora, calculadora de vuelto y recibo no fiscal
+            </p>
+          </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300">
-                    <AlertCircle className="w-4 h-4 text-amber-600" />
-                    <span>Estado: Matrícula Inicial Pendiente</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedPostulanteParaMatricula(null);
-                      router.replace("/admin/inscripciones");
-                    }}
-                    className="text-slate-400 hover:text-slate-600"
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+              Día de Facturación Actual
+            </span>
+            <span className="text-sm font-black text-slate-800">
+              Día 19 del mes
+            </span>
+            <span className="text-[11px] text-[#00205B] font-semibold block">
+              Ciclo Lectivo 2026 · Sin mora
+            </span>
+          </div>
+        </div>
+
+        {/* Buscador Universal de Aspirantes Aprobados */}
+        <div className="relative">
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+            <Search className="w-3.5 h-3.5 text-[#00205B]" />
+            Buscar Alumno por DNI, Apellido o Número de Legajo:
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchPostulanteQuery}
+              onChange={(e) => setSearchPostulanteQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              placeholder="Ingrese DNI (ej: 48.912.445) o apellido (ej: Fernández, Castro)..."
+              className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00205B] focus:bg-white transition-all shadow-2xs font-medium"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            {searchPostulanteQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchPostulanteQuery("")}
+                className="absolute right-3.5 top-2.5 text-xs text-slate-400 hover:text-slate-600 font-semibold"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {/* Dropdown de Resultados Ágiles */}
+          {isSearchFocused && (
+            <div className="absolute z-20 left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden divide-y divide-slate-100 max-h-64 overflow-y-auto">
+              {searchResultsPostulantes.length > 0 ? (
+                searchResultsPostulantes.map((post) => (
+                  <button
+                    key={post.id}
+                    type="button"
+                    onMouseDown={() => handleSelectPostulante(post)}
+                    className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors flex items-center justify-between text-xs"
                   >
-                    Cambiar
-                  </Button>
-                </div>
-              </div>
-
-              {/* Formulario de Matrícula y Cobro */}
-              <form onSubmit={handleConfirmarCobroMatricula} className="space-y-4">
-                {/* Asignación de Comisión y Mes de Matrícula */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Comisión y Turno Asignado:
-                    </label>
-                    <select
-                      value={postComisionId}
-                      onChange={(e) => setPostComisionId(e.target.value)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#00205B]"
-                    >
-                      {comisiones.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nombre} ({c.cupoOcupado}/{c.cupoMaximo} cupos) - {c.diasHorarios}
-                        </option>
-                      ))}
-                    </select>
-                    {postSelectedComisionObj && (
-                      <span className="text-[11px] text-emerald-700 font-semibold block mt-1">
-                        ✓ {postSelectedComisionObj.cupoMaximo - postSelectedComisionObj.cupoOcupado} vacantes disponibles en esta comisión
+                    <div>
+                      <span className="font-bold text-slate-900 block">{post.nombreCompleto}</span>
+                      <span className="text-[11px] text-slate-500 font-mono">
+                        DNI {post.dni} · {post.franjaEtaria} ({post.edad} años) · Nivel: {post.resultadoCorreccion?.nivelAsignado || "General"}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="navy" size="sm">
+                        {post.resultadoCorreccion?.nivelAsignado || "Apto Matrícula"}
+                      </Badge>
+                      <ArrowRight className="w-4 h-4 text-slate-400" />
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-4 text-center text-xs text-slate-500">
+                  {preAlumnos.length === 0
+                    ? "No hay aspirantes con test aprobado pendientes de matriculación."
+                    : "No se encontraron aspirantes que coincidan con la búsqueda."}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Panel del Alumno Seleccionado en Ventanilla (Idéntico a foto image.png) */}
+        {(selectedPostulanteParaMatricula || targetPostulante) && (
+          (() => {
+            const activePostulante = selectedPostulanteParaMatricula || targetPostulante!;
+            return (
+              <div className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/70 space-y-5 animate-in fade-in duration-200">
+                {/* Header del Alumno / Aspirante */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#00205B] flex items-center justify-center font-bold">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-sm">
+                        {activePostulante.nombreCompleto}
+                      </h3>
+                      <span className="text-xs text-slate-500 font-mono">
+                        DNI {activePostulante.dni} · Postulante Aprobado · {postSelectedComisionObj?.nombre || "Comisión a asignar"} · Nivel: {activePostulante.resultadoCorreccion?.nivelAsignado || "General"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300">
+                      <AlertCircle className="w-4 h-4 text-amber-600" />
+                      <span>Estado: Matrícula Inicial Pendiente</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedPostulanteParaMatricula(null);
+                        router.replace("/admin/inscripciones");
+                      }}
+                      className="text-slate-400 hover:text-slate-600"
+                    >
+                      Cambiar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Formulario de Matrícula y Cobro */}
+                <form onSubmit={handleConfirmarCobroMatricula} className="space-y-4">
+                  {/* Asignación de Comisión y Mes de Matrícula */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Comisión y Turno Asignado:
+                      </label>
+                      <select
+                        value={postComisionId}
+                        onChange={(e) => setPostComisionId(e.target.value)}
+                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#00205B]"
+                      >
+                        {comisiones.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre} ({c.cupoOcupado}/{c.cupoMaximo} cupos) - {c.diasHorarios}
+                          </option>
+                        ))}
+                      </select>
+                      {postSelectedComisionObj && (
+                        <span className="text-[11px] text-emerald-700 font-semibold block mt-1">
+                          ✓ {postSelectedComisionObj.cupoMaximo - postSelectedComisionObj.cupoOcupado} vacantes disponibles en esta comisión
+                        </span>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Mes de Pago (Tarifa Fijada por la Administración - Sin Mora):
+                      </label>
+                      <select
+                        value={postMesPago}
+                        onChange={(e) => handlePostMesChange(e.target.value)}
+                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#00205B]"
+                      >
+                        {ESCALA_MESES_MATRICULA.map((e) => (
+                          <option key={e.value} value={e.value}>
+                            {e.label}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[11px] text-slate-500 block mt-1">
+                        El valor de matrícula no devenga mora. Se aplica la tarifa según mes.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Liquidación en Tiempo Real: 3 Cajas (Idéntico a foto image.png) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                        CONCEPTO A COBRAR
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 block mt-1">
+                        Matrícula Ciclo Lectivo 2026
+                      </span>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">
+                        Vigencia: Ciclo Lectivo 2026
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase block">
+                        TRAMO APLICADO SEGÚN FECHA
+                      </span>
+                      <span className="text-xs font-bold text-[#00205B] block mt-1">
+                        Matrícula Mes de {postMesPago.charAt(0).toUpperCase() + postMesPago.slice(1)} (Sin recargo)
+                      </span>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">
+                        Tarifa fijada: <strong>{formatCurrency(postArancel)}</strong>
+                      </span>
+                    </div>
+
+                    <div className="bg-[#00205B] text-white p-3.5 rounded-xl flex flex-col justify-between shadow-2xs">
+                      <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                        TOTAL A PERCIBIR HOY
+                      </span>
+                      <span className="text-2xl font-black tracking-tight">
+                        {formatCurrency(postArancel)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Selector de Método de Pago */}
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Seleccione Método de Pago:
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPostMetodoPago("Efectivo")}
+                        className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition-all ${
+                          postMetodoPago === "Efectivo"
+                            ? "border-emerald-600 bg-emerald-50/50 text-emerald-900 shadow-xs"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        <Banknote className="w-4 h-4 text-emerald-600" />
+                        <span>Efectivo en Ventanilla</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPostMetodoPago("Transferencia")}
+                        className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition-all ${
+                          postMetodoPago === "Transferencia"
+                            ? "border-blue-600 bg-blue-50/50 text-blue-900 shadow-xs"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        <CreditCard className="w-4 h-4 text-blue-600" />
+                        <span>Transferencia Bancaria</span>
+                      </button>
+                    </div>
+
+                    {/* Sub-paneles según método */}
+                    {postMetodoPago === "Efectivo" ? (
+                      <CalculadoraVuelto
+                        totalACobrar={postArancel}
+                        montoRecibido={montoRecibidoMatricula}
+                        onMontoRecibidoChange={setMontoRecibidoMatricula}
+                      />
+                    ) : (
+                      <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-2">
+                        <label className="block text-xs font-bold text-blue-900">
+                          Número de Comprobante / Referencia Bancaria (Obligatorio):
+                        </label>
+                        <input
+                          type="text"
+                          value={comprobanteRefMatricula}
+                          onChange={(e) => setComprobanteRefMatricula(e.target.value)}
+                          placeholder="ej: TRF-BAPRO-994120 o MP-8912384"
+                          required
+                          className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-blue-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-[10px] text-blue-700 block">
+                          Banco Provincia · CBU: 0140999801200018294812 · Titular: Cultural Inglesa de Ensenada
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Mes de Pago (Tarifa Fijada por la Administración - Sin Mora):
-                    </label>
-                    <select
-                      value={postMesPago}
-                      onChange={(e) => handlePostMesChange(e.target.value)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-[#00205B]"
+                  {/* Botón de Confirmación y Emisión */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <span className="text-xs text-slate-500">
+                      Al confirmar, se emitirá automáticamente el <strong>Recibo No Fiscal</strong> correlativo.
+                    </span>
+                    <Button
+                      type="submit"
+                      variant="coral"
+                      size="md"
+                      className="font-bold shadow-md shadow-[#E63956]/20"
+                      icon={<Receipt className="w-4 h-4" />}
                     >
-                      {ESCALA_MESES_MATRICULA.map((e) => (
-                        <option key={e.value} value={e.value}>
-                          {e.label}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="text-[11px] text-slate-500 block mt-1">
-                      El valor de matrícula no devenga mora. Se aplica la tarifa según mes.
-                    </span>
+                      Cobrar {formatCurrency(postArancel)} y Emitir Recibo
+                    </Button>
                   </div>
-                </div>
-
-                {/* Liquidación en Tiempo Real: 3 Cajas (Idéntico a foto image.png) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">
-                      CONCEPTO A COBRAR
-                    </span>
-                    <span className="text-xs font-bold text-slate-800 block mt-1">
-                      Matrícula Ciclo Lectivo 2026
-                    </span>
-                    <span className="text-[11px] text-slate-500 block mt-0.5">
-                      Vigencia: Ciclo Lectivo 2026
-                    </span>
-                  </div>
-
-                  <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">
-                      TRAMO APLICADO SEGÚN FECHA
-                    </span>
-                    <span className="text-xs font-bold text-[#00205B] block mt-1">
-                      Matrícula Mes de {postMesPago.charAt(0).toUpperCase() + postMesPago.slice(1)} (Sin recargo)
-                    </span>
-                    <span className="text-[11px] text-slate-500 block mt-0.5">
-                      Tarifa fijada: <strong>{formatCurrency(postArancel)}</strong>
-                    </span>
-                  </div>
-
-                  <div className="bg-[#00205B] text-white p-3.5 rounded-xl flex flex-col justify-between shadow-2xs">
-                    <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
-                      TOTAL A PERCIBIR HOY
-                    </span>
-                    <span className="text-2xl font-black tracking-tight">
-                      {formatCurrency(postArancel)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Selector de Método de Pago */}
-                <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Seleccione Método de Pago:
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPostMetodoPago("Efectivo")}
-                      className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition-all ${
-                        postMetodoPago === "Efectivo"
-                          ? "border-emerald-600 bg-emerald-50/50 text-emerald-900 shadow-xs"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                      }`}
-                    >
-                      <Banknote className="w-4 h-4 text-emerald-600" />
-                      <span>Efectivo en Ventanilla</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPostMetodoPago("Transferencia")}
-                      className={`p-3 rounded-xl border-2 flex items-center justify-center gap-2 font-bold text-xs transition-all ${
-                        postMetodoPago === "Transferencia"
-                          ? "border-blue-600 bg-blue-50/50 text-blue-900 shadow-xs"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                      }`}
-                    >
-                      <CreditCard className="w-4 h-4 text-blue-600" />
-                      <span>Transferencia Bancaria</span>
-                    </button>
-                  </div>
-
-                  {/* Sub-paneles según método */}
-                  {postMetodoPago === "Efectivo" ? (
-                    <CalculadoraVuelto
-                      totalACobrar={postArancel}
-                      montoRecibido={montoRecibidoMatricula}
-                      onMontoRecibidoChange={setMontoRecibidoMatricula}
-                    />
-                  ) : (
-                    <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-200 space-y-2">
-                      <label className="block text-xs font-bold text-blue-900">
-                        Número de Comprobante / Referencia Bancaria (Obligatorio):
-                      </label>
-                      <input
-                        type="text"
-                        value={comprobanteRefMatricula}
-                        onChange={(e) => setComprobanteRefMatricula(e.target.value)}
-                        placeholder="ej: TRF-BAPRO-994120 o MP-8912384"
-                        required
-                        className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-blue-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <span className="text-[10px] text-blue-700 block">
-                        Banco Provincia · CBU: 0140999801200018294812 · Titular: Cultural Inglesa de Ensenada
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Botón de Confirmación y Emisión */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                  <span className="text-xs text-slate-500">
-                    Al confirmar, se emitirá automáticamente el <strong>Recibo No Fiscal</strong> correlativo.
-                  </span>
-                  <Button
-                    type="submit"
-                    variant="coral"
-                    size="md"
-                    className="font-bold shadow-md shadow-[#E63956]/20"
-                    icon={<Receipt className="w-4 h-4" />}
-                  >
-                    Cobrar {formatCurrency(postArancel)} y Emitir Recibo
-                  </Button>
-                </div>
-              </form>
-            </div>
-          );
-        })()
-      )}
-
-      {/* Banner de Aspirantes Aprobados Listos para Matricular (cuando la ventanilla está cerrada) */}
-      {!selectedPostulanteParaMatricula && !targetPostulante && (
-        (() => {
-          const preAlumnos = postulantes.filter((p) => p.estado === "Pre-Alumno");
-          if (preAlumnos.length === 0) return null;
-
-          return (
-            <div className="p-4 rounded-xl bg-blue-50/80 border border-blue-200 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
-              <div className="flex items-center gap-2 text-xs">
-                <Sparkles className="w-4 h-4 text-[#00205B] shrink-0" />
-                <div>
-                  <span className="font-bold text-[#00205B] block">
-                    {preAlumnos.length} aspirante(s) con test nivelatorio aprobado listo(s) para matricular:
-                  </span>
-                  <span className="text-slate-600 text-[11px]">
-                    {preAlumnos.map((p) => `${p.nombreCompleto} (${p.resultadoCorreccion?.nivelAsignado || "General"})`).join(" · ")}
-                  </span>
-                </div>
+                </form>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {preAlumnos.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="coral"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedPostulanteParaMatricula(p);
-                      const assignedLevel = p.resultadoCorreccion?.nivelAsignado || "";
-                      const matchingComision = comisiones.find((c) =>
-                        c.nombre.toLowerCase().includes(assignedLevel.toLowerCase().slice(0, 6))
-                      );
-                      if (matchingComision) setPostComisionId(matchingComision.id);
-                      setPostMesPago("octubre");
-                      setPostArancel(35000);
-                      setPostMetodoPago("Efectivo");
-                      setMontoRecibidoMatricula(0);
-                      setComprobanteRefMatricula(`CAJA-MATR-${Date.now().toString().slice(-4)}`);
-                    }}
-                    icon={<GraduationCap className="w-3.5 h-3.5" />}
-                  >
-                    Matricular a {p.nombreCompleto.split(" ")[0]}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          );
-        })()
-      )}
+            );
+          })()
+        )}
+      </div>
 
       <DataTable
         title="Libro de Inscripciones y Matriculaciones"
