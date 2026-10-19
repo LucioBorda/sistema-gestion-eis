@@ -231,14 +231,16 @@ export default function CobranzasPage(): React.ReactElement {
 
   return (
     <div className="space-y-6">
-      {/* 4 Financial KPI Cards */}
+      {/* 4 Financial / Operational KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            Efectivo en Caja Diaria
+            {currentUser.role === "Directora" ? "Efectivo en Caja Diaria" : "Cobros en Efectivo"}
           </span>
           <span className="text-2xl font-black text-emerald-700 mt-1 block">
-            {formatCurrency(totalEfectivo)}
+            {currentUser.role === "Directora"
+              ? formatCurrency(totalEfectivo)
+              : `${cobranzas.filter((c) => c.estado === "Pagado" && c.metodoPago === "Efectivo").length} cobros`}
           </span>
           <span className="text-[11px] text-slate-500 font-medium mt-0.5 block flex items-center gap-1">
             <Banknote className="w-3 h-3 text-emerald-600" />
@@ -248,10 +250,12 @@ export default function CobranzasPage(): React.ReactElement {
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            Transferencias Bancarias
+            {currentUser.role === "Directora" ? "Transferencias Bancarias" : "Cobros por Transferencia"}
           </span>
           <span className="text-2xl font-black text-blue-800 mt-1 block">
-            {formatCurrency(totalTransferencia)}
+            {currentUser.role === "Directora"
+              ? formatCurrency(totalTransferencia)
+              : `${cobranzas.filter((c) => c.estado === "Pagado" && c.metodoPago === "Transferencia").length} cobros`}
           </span>
           <span className="text-[11px] text-slate-500 font-medium mt-0.5 block flex items-center gap-1">
             <CreditCard className="w-3 h-3 text-blue-600" />
@@ -294,10 +298,10 @@ export default function CobranzasPage(): React.ReactElement {
         data={filteredCobranzas}
         columns={columns}
         keyExtractor={(item) => item.id}
-        onExportExcel={handleExportExcel}
-        onExportPdf={handleExportPdf}
+        onExportExcel={currentUser.role === "Directora" ? handleExportExcel : undefined}
+        onExportPdf={currentUser.role === "Directora" ? handleExportPdf : undefined}
         onView={handleOpenDetail}
-        onDelete={handleOpenDelete}
+        onDelete={currentUser.role === "Directora" ? handleOpenDelete : undefined}
         extraFilters={
           <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1">
             {["TODOS", "Pagado", "Pendiente", "Vencido"].map((st) => (
