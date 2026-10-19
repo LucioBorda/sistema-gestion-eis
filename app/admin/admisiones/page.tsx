@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useGlobalData } from "@/features/core/DataContext";
 import { useAuth } from "@/features/auth/AuthContext";
 import {
@@ -47,6 +48,7 @@ export default function AdmisionesPage(): React.ReactElement {
     cursos,
   } = useGlobalData();
   const { currentUser } = useAuth();
+  const router = useRouter();
 
   const [filterEstado, setFilterEstado] = useState<string>("TODOS");
   const [showCalendar, setShowCalendar] = useState(false);
@@ -113,8 +115,7 @@ export default function AdmisionesPage(): React.ReactElement {
   };
 
   const handleOpenEnrollDesk = (item: PostulanteItem) => {
-    setSelectedPostulante(item);
-    setModalEnrollOpen(true);
+    router.push(`/admin/inscripciones?postulanteId=${item.id}&action=matricular`);
   };
 
   const handleConfirmEnroll = (
@@ -278,14 +279,6 @@ export default function AdmisionesPage(): React.ReactElement {
             icon={<Calendar className="w-4 h-4 text-[#00205B]" />}
           >
             {showCalendar ? "Ocultar Agenda" : "Ver Calendario"}
-          </Button>
-          <Button
-            variant="coral"
-            size="sm"
-            onClick={handleOpenNewPostulante}
-            icon={<UserPlus className="w-4 h-4" />}
-          >
-            Precargar Postulante
           </Button>
         </div>
       </div>

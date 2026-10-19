@@ -33,21 +33,12 @@ export default function CobranzasPage(): React.ReactElement {
     useGlobalData();
   const { currentUser } = useAuth();
 
-  const [modalNewOpen, setModalNewOpen] = useState(false);
   const [reciboModalOpen, setReciboModalOpen] = useState(false);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const [selectedCob, setSelectedCob] = useState<CobranzaItem | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("TODOS");
-
-  // Form State: Nueva Cuota Manual
-  const [estudianteId, setEstudianteId] = useState(estudiantes[0]?.id || "");
-  const [concepto, setConcepto] = useState("Cuota Arancelaria Noviembre 2026");
-  const [mesPeriodo, setMesPeriodo] = useState("Noviembre 2026");
-  const [monto, setMonto] = useState(54000);
-  const [recargoMora, setRecargoMora] = useState(0);
-  const [fechaVencimiento, setFechaVencimiento] = useState("2026-11-10");
 
   // KPI Calculations
   const totalEfectivo = cobranzas
@@ -60,17 +51,6 @@ export default function CobranzasPage(): React.ReactElement {
 
   const vencidasCount = cobranzas.filter((c) => c.estado === "Vencido").length;
   const pagadasCount = cobranzas.filter((c) => c.estado === "Pagado").length;
-
-  const handleOpenNew = () => {
-    setSelectedCob(null);
-    setEstudianteId(estudiantes[0]?.id || "");
-    setConcepto("Cuota Arancelaria Noviembre 2026");
-    setMesPeriodo("Noviembre 2026");
-    setMonto(54000);
-    setRecargoMora(0);
-    setFechaVencimiento("2026-11-10");
-    setModalNewOpen(true);
-  };
 
   const handleOpenReceipt = (item: CobranzaItem) => {
     setSelectedCob(item);
@@ -85,47 +65,6 @@ export default function CobranzasPage(): React.ReactElement {
   const handleOpenDelete = (item: CobranzaItem) => {
     setSelectedCob(item);
     setConfirmDeleteOpen(true);
-  };
-
-  const handleSaveNewArancel = (e: React.FormEvent) => {
-    e.preventDefault();
-    const estObj = estudiantes.find((e) => e.id === estudianteId);
-    const estudianteNombre = estObj ? estObj.nombreCompleto : "Alumno";
-    const estudianteDni = estObj ? estObj.dni : "00000000";
-    const legajoNumero = estObj ? estObj.legajoNumero : "LEG-000";
-    const cursoNombre = estObj ? estObj.cursoActual : "General";
-
-    const reciboNumero = `REC-2026-${String(cobranzas.length + 420).padStart(5, "0")}`;
-    const totalAPagar = monto + recargoMora;
-
-    const newCob: CobranzaItem = {
-      id: `cob-${Date.now()}`,
-      reciboNumero,
-      estudianteId,
-      estudianteNombre,
-      estudianteDni,
-      legajoNumero,
-      cursoNombre,
-      concepto,
-      mesPeriodo,
-      montoBaseEfectivo: monto,
-      montoBaseTransferencia: Math.round(monto * 1.1),
-      montoBase: monto,
-      tramoFecha: "tramo_1_10",
-      porcentajeRecargo: 0,
-      recargoMora,
-      totalAPagar,
-      fechaVencimiento,
-      fechaPago: null,
-      metodoPago: null,
-      cajeroResponsable: null,
-      estado: "Pendiente",
-      comprobanteReferencia: null,
-      observaciones: "Arancel mensual emitido por administración central.",
-    };
-
-    addCobranza(newCob);
-    setModalNewOpen(false);
   };
 
   const handleConfirmDelete = () => {
@@ -355,8 +294,6 @@ export default function CobranzasPage(): React.ReactElement {
         data={filteredCobranzas}
         columns={columns}
         keyExtractor={(item) => item.id}
-        onAddNew={handleOpenNew}
-        addNewLabel="Emitir Cuota / Arancel"
         onExportExcel={handleExportExcel}
         onExportPdf={handleExportPdf}
         onView={handleOpenDetail}
@@ -393,79 +330,6 @@ export default function CobranzasPage(): React.ReactElement {
         )}
         initialPageSize={8}
       />
-
-      {/* MODAL: EMITIR CUOTA MANUAL */}
-      <Modal
-        isOpen={modalNewOpen}
-        onClose={() => setModalNewOpen(false)}
-        title="Emisión de Arancel / Cuota Individual"
-        subtitle="Genere el devengamiento arancelario para un estudiante"
-        maxWidth="lg"
-      >
-        <form onSubmit={handleSaveNewArancel} className="space-y-4 py-2">
-          <Select
-            label="Estudiante Titular"
-            value={estudianteId}
-            onChange={(e) => setEstudianteId(e.target.value)}
-            options={estudiantes.map((e) => ({
-              value: e.id,
-              label: `${e.nombreCompleto} (DNI ${e.dni}) - Curso: ${e.cursoActual}`,
-            }))}
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Concepto Arancelario"
-              value={concepto}
-              onChange={(e) => setConcepto(e.target.value)}
-              required
-            />
-            <Input
-              label="Mes / Período Correspondiente"
-              value={mesPeriodo}
-              onChange={(e) => setMesPeriodo(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <Input
-              label="Monto Base (ARS)"
-              type="number"
-              value={monto}
-              onChange={(e) => setMonto(Number(e.target.value))}
-              required
-            />
-            <Input
-              label="Recargo por Mora (ARS)"
-              type="number"
-              value={recargoMora}
-              onChange={(e) => setRecargoMora(Number(e.target.value))}
-            />
-            <Input
-              label="Fecha Límite Vencimiento"
-              type="date"
-              value={fechaVencimiento}
-              onChange={(e) => setFechaVencimiento(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="p-3 bg-blue-50 rounded-xl text-xs flex justify-between items-center text-[#00205B]">
-            <span>Total a devengar:</span>
-            <span className="font-extrabold text-base">{formatCurrency(monto + recargoMora)}</span>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setModalNewOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" variant="coral" size="sm">
-              Emitir Cuota
-            </Button>
-          </div>
-        </form>
-      </Modal>
 
       {/* MODAL: VER DETALLE */}
       <Modal

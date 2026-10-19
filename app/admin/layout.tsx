@@ -154,7 +154,7 @@ export default function AdminLayout({
       ],
     },
     {
-      title: "ESTUDIANTES Y ACADÉMICA",
+      title: "MATRICULACIONES Y ALUMNOS",
       items: [
         {
           title: "Padrón de Estudiantes",

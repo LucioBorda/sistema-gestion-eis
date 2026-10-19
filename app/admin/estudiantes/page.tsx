@@ -394,8 +394,6 @@ export default function EstudiantesPage(): React.ReactElement {
         data={estudiantes}
         columns={columns}
         keyExtractor={(item) => item.id}
-        onAddNew={handleOpenNew}
-        addNewLabel="Nuevo Alumno"
         onExportExcel={handleExportExcel}
         onExportPdf={handleExportPdf}
         onView={handleOpenDetail}

@@ -486,7 +486,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     );
 
-    // 3. Emitir y cobrar Matrícula en Cobranzas
+    // 3. Crear Registro Oficial de Matrícula (Inscripciones)
+    const numeroMatricula = `MATR-2026-${String(inscripciones.length + 1).padStart(3, "0")}`;
+    const comisionObj = comisiones.find((c) => c.id === comisionId);
+    const nuevaInscripcion: InscripcionItem = {
+      id: `ins-${Date.now()}`,
+      numeroMatricula,
+      estudianteId: nuevoEstudiante.id,
+      estudianteNombre: post.nombreCompleto,
+      estudianteDni: post.dni,
+      comisionId: comisionId || "com-1",
+      comisionNombre: comisionObj?.nombre || cursoNombre,
+      cicloLectivo: "Ciclo Lectivo 2026",
+      fechaMatriculacion: todayStr,
+      arancelMatricula: montoMatricula,
+      metodoPago: medioCobro,
+      estado: "Confirmada",
+      observaciones: `Matrícula formalizada tras Test Nivelatorio y pase a Alumno Activo.`,
+    };
+    setInscripciones((prev) => [nuevaInscripcion, ...prev]);
+
+    // 4. Emitir y cobrar Matrícula en Cobranzas
     const reciboNumero = `REC-2026-${String(cobranzas.length + 500).padStart(5, "0")}`;
     const nuevaCobranza: CobranzaItem = {
       id: `cob-${Date.now()}`,
