@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useGlobalData } from "@/features/core/DataContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import {
   CalendarDays,
   ChevronLeft,
@@ -17,15 +18,20 @@ import {
   Briefcase,
   Star,
   UserCheck,
-  Filter,
   CheckCircle2,
   Calendar as CalendarIcon,
   Phone,
   FileText,
   ArrowRight,
+  CalendarPlus,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 
 export type CategoriaEvento =
   | "patria"
@@ -49,6 +55,7 @@ export interface EventoInstitucional {
   postulanteId?: string;
   postulanteDni?: string;
   postulanteNivel?: string;
+  esManual?: boolean;
 }
 
 // Eventos institucionales canónicos del Ciclo Lectivo EIS Institute
@@ -238,12 +245,33 @@ const EVENTOS_FIJOS_INSTITUCIONALES: EventoInstitucional[] = [
 
 export const CalendarioInstitucional: React.FC = () => {
   const { postulantes } = useGlobalData();
+  const { currentUser } = useAuth();
 
   // Calendar month state (defaults to October 2026)
   const [currentYear, setCurrentYear] = useState<number>(2026);
   const [currentMonth, setCurrentMonth] = useState<number>(9); // 0-indexed: 9 = Octubre
-  const [selectedFilter, setSelectedFilter] = useState<string>("TODOS");
   const [selectedEvent, setSelectedEvent] = useState<EventoInstitucional | null>(null);
+
+  // Modal para agendar nuevo evento (Secretaria y Administradora / Directora)
+  const [modalNuevoEventoOpen, setModalNuevoEventoOpen] = useState(false);
+  const [nuevoTitulo, setNuevoTitulo] = useState("");
+  const [nuevaCategoria, setNuevaCategoria] = useState<CategoriaEvento>("reunion");
+  const [nuevaFecha, setNuevaFecha] = useState("2026-10-20");
+  const [nuevaHora, setNuevaHora] = useState("18:00 hs");
+  const [nuevoLugar, setNuevoLugar] = useState("Sede Central La Paz Nº 525");
+  const [nuevosParticipantes, setNuevosParticipantes] = useState("");
+  const [nuevaDescripcion, setNuevaDescripcion] = useState("");
+
+  // Eventos creados manualmente por secretaria o administradora
+  const [eventosManuales, setEventosManuales] = useState<EventoInstitucional[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("eis_eventos_institucionales");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const mesesNombres = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -251,9 +279,63 @@ export const CalendarioInstitucional: React.FC = () => {
   ];
   const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-  // Merge fixed institutional events with live candidates scheduled for level tests
+  // Roles autorizados a agendar eventos
+  const canScheduleEvents =
+    currentUser.role === "Directora" || currentUser.role === "Secretaria";
+
+  // Guardar nuevo evento
+  const handleSaveNuevoEvento = (e: React.FormEvent) => {
+    e.preventDefault();
+    const categoriaLabels: Record<CategoriaEvento, string> = {
+      reunion: "Reunión de Personal",
+      examen: "Examen / Evaluación",
+      acto: "Acto Escolar",
+      halloween: "Halloween & Cultura",
+      anglia: "Eventos Anglia",
+      patria: "Fecha Patria / Feriado",
+      nivelatorio: "Test Nivelatorio",
+    };
+
+    const nuevo: EventoInstitucional = {
+      id: `evt-custom-${Date.now()}`,
+      titulo: nuevoTitulo,
+      categoria: nuevaCategoria,
+      categoriaLabel: categoriaLabels[nuevaCategoria] || "Evento Especial",
+      fecha: nuevaFecha,
+      hora: nuevaHora || undefined,
+      lugar: nuevoLugar || undefined,
+      participantes: nuevosParticipantes || undefined,
+      descripcion: nuevaDescripcion || "Evento institucional registrado en agenda.",
+      esManual: true,
+    };
+
+    const updated = [nuevo, ...eventosManuales];
+    setEventosManuales(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("eis_eventos_institucionales", JSON.stringify(updated));
+    }
+
+    setModalNuevoEventoOpen(false);
+    setNuevoTitulo("");
+    setNuevaDescripcion("");
+    setNuevosParticipantes("");
+  };
+
+  const handleDeleteEventoManual = (id: string) => {
+    const updated = eventosManuales.filter((e) => e.id !== id);
+    setEventosManuales(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("eis_eventos_institucionales", JSON.stringify(updated));
+    }
+    setSelectedEvent(null);
+  };
+
+  // Merge fixed events + scheduled applicant tests + manually created events
   const todosLosEventos: EventoInstitucional[] = useMemo(() => {
-    const eventos: EventoInstitucional[] = [...EVENTOS_FIJOS_INSTITUCIONALES];
+    const eventos: EventoInstitucional[] = [
+      ...EVENTOS_FIJOS_INSTITUCIONALES,
+      ...eventosManuales,
+    ];
 
     // Add applicants with scheduled test dates
     postulantes.forEach((p) => {
@@ -276,13 +358,7 @@ export const CalendarioInstitucional: React.FC = () => {
     });
 
     return eventos;
-  }, [postulantes]);
-
-  // Filter events by selected category
-  const eventosFiltrados = useMemo(() => {
-    if (selectedFilter === "TODOS") return todosLosEventos;
-    return todosLosEventos.filter((e) => e.categoria === selectedFilter);
-  }, [todosLosEventos, selectedFilter]);
+  }, [postulantes, eventosManuales]);
 
   // Month navigation
   const handlePrevMonth = () => {
@@ -315,7 +391,7 @@ export const CalendarioInstitucional: React.FC = () => {
   // Map events by day number
   const eventsByDay = useMemo(() => {
     const map: Record<number, EventoInstitucional[]> = {};
-    eventosFiltrados.forEach((e) => {
+    todosLosEventos.forEach((e) => {
       const parts = e.fecha.split("-");
       if (parts.length === 3) {
         const year = parseInt(parts[0], 10);
@@ -328,7 +404,7 @@ export const CalendarioInstitucional: React.FC = () => {
       }
     });
     return map;
-  }, [eventosFiltrados, currentYear, currentMonth]);
+  }, [todosLosEventos, currentYear, currentMonth]);
 
   // Style helper for event chips
   const getEventChipStyle = (cat: CategoriaEvento) => {
@@ -372,34 +448,42 @@ export const CalendarioInstitucional: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6 sm:p-7">
-      {/* Google Calendar Style Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between pb-4 border-b border-slate-200 gap-4">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-3 p-4 sm:p-5">
+      {/* Header: Title, Navigation, and Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#00205B] flex items-center justify-center font-black shadow-2xs border border-blue-200/80">
-            <CalendarDays className="w-6 h-6 text-[#00205B]" />
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#00205B] flex items-center justify-center font-black shadow-2xs border border-blue-200/80 shrink-0">
+            <CalendarDays className="w-5 h-5 text-[#00205B]" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-black text-[#00205B] tracking-tight">
+              <h2 className="text-lg sm:text-xl font-black text-[#00205B] tracking-tight">
                 {mesesNombres[currentMonth]} {currentYear}
               </h2>
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#00205B] text-xs font-bold border border-blue-200">
-                {Object.values(eventsByDay).flat().length} actividades este mes
+              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#00205B] text-xs font-bold border border-blue-200">
+                {Object.values(eventsByDay).flat().length} actividades
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Calendario oficial integral: fechas patrias, Halloween, sesiones Anglia, exámenes de 2º ciclo, reuniones, actos y tests nivelatorios
-            </p>
           </div>
         </div>
 
-        {/* Navigation Controls like Google Calendar */}
-        <div className="flex items-center gap-2 self-start lg:self-auto">
+        {/* Navigation Controls & Event Scheduling Button */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {canScheduleEvents && (
+            <Button
+              variant="coral"
+              size="sm"
+              onClick={() => setModalNuevoEventoOpen(true)}
+              icon={<CalendarPlus className="w-4 h-4" />}
+            >
+              Agendar Evento
+            </Button>
+          )}
+
           <button
             type="button"
             onClick={handleGoToday}
-            className="px-3.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs"
+            className="px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs"
           >
             Hoy
           </button>
@@ -408,7 +492,7 @@ export const CalendarioInstitucional: React.FC = () => {
               type="button"
               onClick={handlePrevMonth}
               title="Mes Anterior"
-              className="p-2 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-1.5 hover:bg-slate-100 text-slate-600 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -417,7 +501,7 @@ export const CalendarioInstitucional: React.FC = () => {
               type="button"
               onClick={handleNextMonth}
               title="Mes Siguiente"
-              className="p-2 hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-1.5 hover:bg-slate-100 text-slate-600 transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -425,40 +509,10 @@ export const CalendarioInstitucional: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Filter Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-        <span className="text-slate-400 font-bold text-[11px] uppercase mr-1 flex items-center gap-1">
-          <Filter className="w-3 h-3" /> Filtrar:
-        </span>
-        {[
-          { key: "TODOS", label: "Todos los eventos" },
-          { key: "patria", label: "Fechas Patrias / Feriados" },
-          { key: "halloween", label: "Halloween & Cultura" },
-          { key: "anglia", label: "Eventos Anglia" },
-          { key: "examen", label: "Exámenes 2º Ciclo" },
-          { key: "reunion", label: "Reuniones de Personal" },
-          { key: "acto", label: "Actos Escolares" },
-          { key: "nivelatorio", label: "Tests Nivelatorios" },
-        ].map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            onClick={() => setSelectedFilter(f.key)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-              selectedFilter === f.key
-                ? "bg-[#00205B] text-white shadow-xs font-bold"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Google Calendar Monthly Grid */}
-      <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
+      {/* Google Calendar Monthly Grid (Compact and Clean) */}
+      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
         {/* Days of week header */}
-        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-bold text-slate-600 py-2.5">
+        <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-bold text-slate-600 py-1.5">
           {diasSemana.map((dia, idx) => (
             <div
               key={dia}
@@ -469,11 +523,11 @@ export const CalendarioInstitucional: React.FC = () => {
           ))}
         </div>
 
-        {/* Calendar days grid (7 cols) */}
-        <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 min-h-[420px]">
+        {/* Calendar days grid (7 cols with compact min-height) */}
+        <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 min-h-[340px]">
           {/* Leading blank days */}
           {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-            <div key={`blank-${i}`} className="bg-slate-50/40 p-2 min-h-[90px]" />
+            <div key={`blank-${i}`} className="bg-slate-50/40 p-1.5 min-h-[72px]" />
           ))}
 
           {/* Month Days */}
@@ -485,14 +539,14 @@ export const CalendarioInstitucional: React.FC = () => {
             return (
               <div
                 key={`day-${dayNum}`}
-                className={`p-2 min-h-[95px] flex flex-col justify-between transition-colors ${
-                  isToday ? "bg-blue-50/40" : "hover:bg-slate-50/60"
+                className={`p-1.5 min-h-[74px] sm:min-h-[76px] flex flex-col justify-between transition-colors ${
+                  isToday ? "bg-blue-50/50" : "hover:bg-slate-50/70"
                 }`}
               >
                 {/* Day Number Header */}
                 <div className="flex items-center justify-between">
                   <span
-                    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                    className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
                       isToday
                         ? "bg-[#00205B] text-white shadow-xs font-black"
                         : "text-slate-700"
@@ -507,7 +561,7 @@ export const CalendarioInstitucional: React.FC = () => {
                   )}
                 </div>
 
-                {/* Event Chips (Google Calendar Style) */}
+                {/* Event Chips (Compact Google Calendar Style) */}
                 <div className="space-y-1 mt-1 flex-1">
                   {dayEvents.map((ev) => {
                     const isSelected = selectedEvent?.id === ev.id;
@@ -518,14 +572,14 @@ export const CalendarioInstitucional: React.FC = () => {
                         key={ev.id}
                         type="button"
                         onClick={() => setSelectedEvent(ev)}
-                        className={`w-full text-left px-2 py-1 rounded-md text-[11px] truncate transition-all flex items-center gap-1.5 shadow-2xs ${chipStyle} ${
-                          isSelected ? "ring-2 ring-[#00205B] shadow-sm scale-[1.02]" : ""
+                        className={`w-full text-left px-1.5 py-0.5 rounded text-[10.5px] truncate transition-all flex items-center gap-1 shadow-2xs leading-tight ${chipStyle} ${
+                          isSelected ? "ring-2 ring-[#00205B] shadow-xs scale-[1.02]" : ""
                         }`}
                         title={`${ev.hora ? ev.hora + " - " : ""}${ev.titulo}`}
                       >
                         {getEventIcon(ev.categoria)}
                         {ev.hora && (
-                          <span className="font-mono text-[10px] opacity-75 shrink-0">
+                          <span className="font-mono text-[9.5px] opacity-75 shrink-0">
                             {ev.hora.split(" ")[0]}
                           </span>
                         )}
@@ -540,13 +594,13 @@ export const CalendarioInstitucional: React.FC = () => {
         </div>
       </div>
 
-      {/* Selected Event Floating Details Card (Google Calendar Details Style) */}
+      {/* Selected Event Details Card (Google Calendar Details Style) */}
       {selectedEvent && (
-        <div className="p-5 rounded-2xl bg-slate-50 border-2 border-slate-300/80 animate-in fade-in duration-150 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
-          <div className="space-y-2 max-w-3xl">
+        <div className="p-4 rounded-xl bg-slate-50 border-2 border-slate-300/80 animate-in fade-in duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="space-y-1.5 max-w-2xl text-xs">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Detalle del Evento en Calendario:
+              <span className="font-bold uppercase tracking-wider text-slate-400 text-[10px]">
+                Evento Seleccionado:
               </span>
               <Badge
                 variant={
@@ -568,35 +622,35 @@ export const CalendarioInstitucional: React.FC = () => {
               </Badge>
             </div>
 
-            <h3 className="text-lg font-black text-slate-900 tracking-tight">
+            <h3 className="text-base font-black text-slate-900 tracking-tight">
               {selectedEvent.titulo}
             </h3>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600">
-              <span className="flex items-center gap-1.5 font-bold text-[#00205B]">
-                <CalendarIcon className="w-4 h-4 text-[#E63956]" />
+            <div className="flex flex-wrap items-center gap-3 text-slate-600 text-[11px]">
+              <span className="flex items-center gap-1 font-bold text-[#00205B]">
+                <CalendarIcon className="w-3.5 h-3.5 text-[#E63956]" />
                 {selectedEvent.fecha} {selectedEvent.hora ? `· ${selectedEvent.hora}` : ""}
               </span>
               {selectedEvent.lugar && (
-                <span className="flex items-center gap-1.5 text-slate-600">
+                <span className="flex items-center gap-1 text-slate-600">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
                   {selectedEvent.lugar}
                 </span>
               )}
               {selectedEvent.participantes && (
-                <span className="flex items-center gap-1.5 text-slate-600">
+                <span className="flex items-center gap-1 text-slate-600">
                   <Users className="w-3.5 h-3.5 text-slate-400" />
                   {selectedEvent.participantes}
                 </span>
               )}
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200">
+            <p className="text-[11px] text-slate-600 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200">
               {selectedEvent.descripcion}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 self-end lg:self-center">
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
             {selectedEvent.postulanteId && (
               <Link href={`/admin/admisiones`}>
                 <Button variant="coral" size="sm" icon={<ArrowRight className="w-4 h-4" />}>
@@ -604,17 +658,128 @@ export const CalendarioInstitucional: React.FC = () => {
                 </Button>
               </Link>
             )}
+
+            {selectedEvent.esManual && canScheduleEvents && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteEventoManual(selectedEvent.id)}
+                icon={<Trash2 className="w-3.5 h-3.5 text-rose-600" />}
+                className="text-rose-600 hover:bg-rose-50 border-rose-200"
+              >
+                Eliminar
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => setSelectedEvent(null)}
               className="text-slate-600"
             >
-              Cerrar Detalle
+              Cerrar
             </Button>
           </div>
         </div>
       )}
+
+      {/* MODAL: AGENDAR NUEVO EVENTO INSTITUCIONAL (SECRETARÍA Y DIRECTORA) */}
+      <Modal
+        isOpen={modalNuevoEventoOpen}
+        onClose={() => setModalNuevoEventoOpen(false)}
+        title="Agendar Evento Institucional"
+        subtitle="Registro de actividades, reuniones y exámenes en el calendario escolar"
+        maxWidth="lg"
+      >
+        <form onSubmit={handleSaveNuevoEvento} className="space-y-4 py-2">
+          <Input
+            label="Título de la Actividad o Evento"
+            value={nuevoTitulo}
+            onChange={(e) => setNuevoTitulo(e.target.value)}
+            placeholder="Ej: Reunión Docente de Cierre de Notas"
+            required
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Select
+              label="Categoría del Evento"
+              value={nuevaCategoria}
+              onChange={(e) => setNuevaCategoria(e.target.value as CategoriaEvento)}
+              options={[
+                { value: "reunion", label: "Reunión de Personal / Docente" },
+                { value: "examen", label: "Examen / Evaluación Cuatrimestral" },
+                { value: "acto", label: "Acto Escolar / Colación" },
+                { value: "anglia", label: "Evento / Sesión Anglia" },
+                { value: "halloween", label: "Halloween / Celebración Cultural" },
+                { value: "patria", label: "Fecha Patria / Feriado Escolar" },
+              ]}
+            />
+
+            <Input
+              label="Fecha del Evento"
+              type="date"
+              value={nuevaFecha}
+              onChange={(e) => setNuevaFecha(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Horario"
+              value={nuevaHora}
+              onChange={(e) => setNuevaHora(e.target.value)}
+              placeholder="Ej: 18:00 hs o '09:00 a 13:00 hs'"
+            />
+
+            <Input
+              label="Lugar / Aula"
+              value={nuevoLugar}
+              onChange={(e) => setNuevoLugar(e.target.value)}
+              placeholder="Ej: Sede Central - Aula 3"
+            />
+          </div>
+
+          <Input
+            label="Participantes o Destinatarios"
+            value={nuevosParticipantes}
+            onChange={(e) => setNuevosParticipantes(e.target.value)}
+            placeholder="Ej: Docentes Titulares, Alumnos Juniors, Familias"
+          />
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Descripción o Instrucciones
+            </label>
+            <textarea
+              rows={2}
+              value={nuevaDescripcion}
+              onChange={(e) => setNuevaDescripcion(e.target.value)}
+              className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00205B]"
+              placeholder="Detalles organizativos, requisitos o temas a tratar..."
+            />
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setModalNuevoEventoOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="coral"
+              size="sm"
+              icon={<CheckCircle2 className="w-4 h-4" />}
+            >
+              Guardar Evento en Calendario
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
